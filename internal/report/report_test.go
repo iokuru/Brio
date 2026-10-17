@@ -153,6 +153,60 @@ func TestGitHubReporterGolden(t *testing.T) {
 			t.Errorf("mismatch with golden file %s:\nGOT:\n%s\nWANT:\n%s", goldenPath, got, expected)
 		}
 	})
+
+	t.Run("result without step", func(t *testing.T) {
+		rep := TraceReport{
+			Path:   "run_no_step.jsonl",
+			Pass:   false,
+			Failed: 1,
+			Total:  1,
+			Results: []RuleResult{
+				{
+					Name:    "required_calls",
+					Pass:    false,
+					Step:    0,
+					Message: "missing required call: lookup_user",
+				},
+			},
+		}
+		got := normalizeLineEndings(FormatGitHub(rep))
+		goldenPath := filepath.Join(goldenDir, "report_no_step.github")
+		expectedBytes, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatalf("read golden file %s: %v", goldenPath, err)
+		}
+		expected := normalizeLineEndings(string(expectedBytes))
+		if got != expected {
+			t.Errorf("mismatch with golden file %s:\nGOT:\n%s\nWANT:\n%s", goldenPath, got, expected)
+		}
+	})
+
+	t.Run("message needing escaping", func(t *testing.T) {
+		rep := TraceReport{
+			Path:   "run_escaped.jsonl",
+			Pass:   false,
+			Failed: 1,
+			Total:  1,
+			Results: []RuleResult{
+				{
+					Name:    "arg_match",
+					Pass:    false,
+					Step:    3,
+					Message: "rate 100% exceeded\r\nthreshold",
+				},
+			},
+		}
+		got := normalizeLineEndings(FormatGitHub(rep))
+		goldenPath := filepath.Join(goldenDir, "report_escaped.github")
+		expectedBytes, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatalf("read golden file %s: %v", goldenPath, err)
+		}
+		expected := normalizeLineEndings(string(expectedBytes))
+		if got != expected {
+			t.Errorf("mismatch with golden file %s:\nGOT:\n%s\nWANT:\n%s", goldenPath, got, expected)
+		}
+	})
 }
 
 func TestFormatMultiGitHub(t *testing.T) {
@@ -161,7 +215,7 @@ func TestFormatMultiGitHub(t *testing.T) {
 	reports := []TraceReport{rep1, rep2}
 
 	out := FormatMultiGitHub(reports)
-	if !strings.Contains(out, "::error file=run_fail.jsonl,title=Brio::order step 4:") {
+	if !strings.Contains(out, "::error file=run_fail.jsonl,line=4,title=Brio order::issue_refund called before confirm_user") {
 		t.Errorf("missing expected error annotation in multi-github: %s", out)
 	}
 	if !strings.Contains(out, "Summary: 1 of 2 traces failed") {

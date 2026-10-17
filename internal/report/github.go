@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+func escapeGitHubMessage(s string) string {
+	s = strings.ReplaceAll(s, "%", "%25")
+	s = strings.ReplaceAll(s, "\r", "%0D")
+	s = strings.ReplaceAll(s, "\n", "%0A")
+	return s
+}
+
 func FormatGitHub(tr TraceReport) string {
 	var b strings.Builder
 	filePath := tr.Path
@@ -14,10 +21,11 @@ func FormatGitHub(tr TraceReport) string {
 
 	for _, r := range tr.Results {
 		if !r.Pass {
+			msg := escapeGitHubMessage(r.Message)
 			if r.Step > 0 {
-				b.WriteString(fmt.Sprintf("::error file=%s,title=Brio::%s step %d: %s\n", filePath, r.Name, r.Step, r.Message))
+				b.WriteString(fmt.Sprintf("::error file=%s,line=%d,title=Brio %s::%s\n", filePath, r.Step, r.Name, msg))
 			} else {
-				b.WriteString(fmt.Sprintf("::error file=%s,title=Brio::%s: %s\n", filePath, r.Name, r.Message))
+				b.WriteString(fmt.Sprintf("::error file=%s,title=Brio %s::%s\n", filePath, r.Name, msg))
 			}
 		}
 	}
@@ -40,10 +48,11 @@ func FormatMultiGitHub(reports []TraceReport) string {
 		}
 		for _, r := range tr.Results {
 			if !r.Pass {
+				msg := escapeGitHubMessage(r.Message)
 				if r.Step > 0 {
-					b.WriteString(fmt.Sprintf("::error file=%s,title=Brio::%s step %d: %s\n", filePath, r.Name, r.Step, r.Message))
+					b.WriteString(fmt.Sprintf("::error file=%s,line=%d,title=Brio %s::%s\n", filePath, r.Step, r.Name, msg))
 				} else {
-					b.WriteString(fmt.Sprintf("::error file=%s,title=Brio::%s: %s\n", filePath, r.Name, r.Message))
+					b.WriteString(fmt.Sprintf("::error file=%s,title=Brio %s::%s\n", filePath, r.Name, msg))
 				}
 			}
 		}

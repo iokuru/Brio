@@ -1,3 +1,3 @@
-::error file=run_fail.jsonl,title=Brio::order step 4: issue_refund called before confirm_user
-::error file=run_fail.jsonl,title=Brio::limits step 11: lookup_user called 4 times (max_repeat_calls: 3)
+::error file=run_fail.jsonl,line=4,title=Brio order::issue_refund called before confirm_user
+::error file=run_fail.jsonl,line=11,title=Brio limits::lookup_user called 4 times (max_repeat_calls: 3)
 2 of 6 rules failed
