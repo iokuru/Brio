@@ -125,6 +125,50 @@ func TestJSONReporterGolden(t *testing.T) {
 	})
 }
 
+func TestGitHubReporterGolden(t *testing.T) {
+	goldenDir := filepath.Join("..", "..", "testdata", "golden")
+
+	t.Run("passing report github", func(t *testing.T) {
+		got := normalizeLineEndings(FormatGitHub(samplePassingReport()))
+		goldenPath := filepath.Join(goldenDir, "report_pass.github")
+		expectedBytes, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatalf("read golden file %s: %v", goldenPath, err)
+		}
+		expected := normalizeLineEndings(string(expectedBytes))
+		if got != expected {
+			t.Errorf("mismatch with golden file %s:\nGOT:\n%s\nWANT:\n%s", goldenPath, got, expected)
+		}
+	})
+
+	t.Run("failing report github", func(t *testing.T) {
+		got := normalizeLineEndings(FormatGitHub(sampleFailingReport()))
+		goldenPath := filepath.Join(goldenDir, "report_fail.github")
+		expectedBytes, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatalf("read golden file %s: %v", goldenPath, err)
+		}
+		expected := normalizeLineEndings(string(expectedBytes))
+		if got != expected {
+			t.Errorf("mismatch with golden file %s:\nGOT:\n%s\nWANT:\n%s", goldenPath, got, expected)
+		}
+	})
+}
+
+func TestFormatMultiGitHub(t *testing.T) {
+	rep1 := samplePassingReport()
+	rep2 := sampleFailingReport()
+	reports := []TraceReport{rep1, rep2}
+
+	out := FormatMultiGitHub(reports)
+	if !strings.Contains(out, "::error file=run_fail.jsonl,title=Brio::order step 4:") {
+		t.Errorf("missing expected error annotation in multi-github: %s", out)
+	}
+	if !strings.Contains(out, "Summary: 1 of 2 traces failed") {
+		t.Errorf("missing summary in multi-github: %s", out)
+	}
+}
+
 func TestFormatMulti(t *testing.T) {
 	reports := []TraceReport{samplePassingReport(), sampleFailingReport()}
 
