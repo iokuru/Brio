@@ -1,0 +1,26 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+brio
+
+# Test artifacts
+cover.out
+coverage.html
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Excluded metadata
+.[g]emini/
+.agent/
+AGENTS.md
+*LAUDE.md
+.cursor/
