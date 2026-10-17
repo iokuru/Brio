@@ -13,6 +13,14 @@ func escapeGitHubMessage(s string) string {
 }
 
 func FormatGitHub(tr TraceReport) string {
+	if tr.Error != "" {
+		filePath := tr.Path
+		if filePath == "" {
+			filePath = "trace.jsonl"
+		}
+		return fmt.Sprintf("::error file=%s,title=Brio error::%s\n", filePath, escapeGitHubMessage(tr.Error))
+	}
+
 	var b strings.Builder
 	filePath := tr.Path
 	if filePath == "" {
@@ -42,6 +50,12 @@ func FormatMultiGitHub(reports []TraceReport) string {
 		filePath := tr.Path
 		if filePath == "" {
 			filePath = "trace.jsonl"
+		}
+		if tr.Error != "" {
+			failedTraces++
+			msg := escapeGitHubMessage(tr.Error)
+			b.WriteString(fmt.Sprintf("::error file=%s,title=Brio error::%s\n", filePath, msg))
+			continue
 		}
 		if !tr.Pass {
 			failedTraces++

@@ -93,6 +93,8 @@ FAIL limits          step 11: lookup_user called 4 times (max_repeat_calls: 3)
 
 ## Exit Codes
 
-- `0`: All rules passed.
-- `1`: One or more rules failed.
-- `2`: Invalid input or usage (malformed JSONL, invalid YAML spec, missing flags).
+- `0`: All rules passed (or all traces passed in directory mode).
+- `1`: One or more rules failed (in directory mode, at least one trace failed and no bad inputs).
+- `2`: Invalid input or usage (malformed JSONL, invalid YAML spec, missing flags; in directory mode, any trace file had bad input).
+
+In directory mode (`--traces`), every file is checked and reported on its own line without aborting on errors. The final summary displays the counts (`X passed, Y failed, Z errors`).

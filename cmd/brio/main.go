@@ -147,11 +147,13 @@ func runCheck(args []string, stdout, stderr io.Writer) int {
 
 	if *specPath == "" {
 		fmt.Fprintln(stderr, "error: --spec is required")
+		printUsage(stderr)
 		return 2
 	}
 
 	if (*tracePath == "" && *tracesDir == "") || (*tracePath != "" && *tracesDir != "") {
 		fmt.Fprintln(stderr, "error: specify exactly one of --trace or --traces")
+		printUsage(stderr)
 		return 2
 	}
 
@@ -215,13 +217,19 @@ func runCheck(args []string, stdout, stderr io.Writer) int {
 	}
 
 	var reports []report.TraceReport
-	allPass := true
+	hasError := false
+	hasFail := false
 
 	for _, tf := range traceFiles {
 		tr, err := trace.ParseFile(tf)
 		if err != nil {
-			fmt.Fprintf(stderr, "%s: %v\n", tf, err)
-			return 2
+			hasError = true
+			reports = append(reports, report.TraceReport{
+				Path:   tf,
+				Status: "error",
+				Error:  err.Error(),
+			})
+			continue
 		}
 
 		var results []rules.Result
@@ -231,7 +239,7 @@ func runCheck(args []string, stdout, stderr io.Writer) int {
 
 		rep := report.NewTraceReport(tf, ruleList, results)
 		if !rep.Pass {
-			allPass = false
+			hasFail = true
 		}
 		reports = append(reports, rep)
 	}
@@ -243,10 +251,13 @@ func runCheck(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprint(stdout, out)
 
-	if allPass {
-		return 0
+	if hasError {
+		return 2
 	}
-	return 1
+	if hasFail {
+		return 1
+	}
+	return 0
 }
 
 func renderReport(tr report.TraceReport, format string) (string, error) {

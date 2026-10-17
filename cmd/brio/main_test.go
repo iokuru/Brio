@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/iokuru/brio/internal/spec"
 )
 
 func TestVersionCommand(t *testing.T) {
@@ -38,6 +40,18 @@ func TestInitCommand(t *testing.T) {
 	}
 	if !strings.Contains(string(data), "name: starter-flow") {
 		t.Errorf("unexpected starter spec content: %s", string(data))
+	}
+
+	// Validate starter spec passes spec validation
+	sp, err := spec.LoadFile(outPath)
+	if err != nil {
+		t.Fatalf("starter spec failed validation: %v", err)
+	}
+	if sp.Name != "starter-flow" {
+		t.Errorf("unexpected spec name: %s", sp.Name)
+	}
+	if len(sp.Rules) == 0 {
+		t.Errorf("expected rules in starter spec")
 	}
 
 	// Refuse overwrite without --force
@@ -76,24 +90,28 @@ func TestCheckCommandValidation(t *testing.T) {
 		args     []string
 		wantCode int
 		errSub   string
+		usageSub string
 	}{
 		{
 			name:     "missing spec",
 			args:     []string{"check", "--trace", traceFile},
 			wantCode: 2,
 			errSub:   "--spec is required",
+			usageSub: "Usage:",
 		},
 		{
 			name:     "missing both trace and traces",
 			args:     []string{"check", "--spec", specFile},
 			wantCode: 2,
 			errSub:   "specify exactly one of --trace or --traces",
+			usageSub: "Usage:",
 		},
 		{
 			name:     "both trace and traces specified",
 			args:     []string{"check", "--spec", specFile, "--trace", traceFile, "--traces", tmpDir},
 			wantCode: 2,
 			errSub:   "specify exactly one of --trace or --traces",
+			usageSub: "Usage:",
 		},
 		{
 			name:     "invalid format",
@@ -124,6 +142,9 @@ func TestCheckCommandValidation(t *testing.T) {
 			}
 			if tc.errSub != "" && !strings.Contains(stderr.String(), tc.errSub) {
 				t.Errorf("expected error containing %q, got %q", tc.errSub, stderr.String())
+			}
+			if tc.usageSub != "" && !strings.Contains(stderr.String(), tc.usageSub) {
+				t.Errorf("expected usage containing %q, got %q", tc.usageSub, stderr.String())
 			}
 		})
 	}
@@ -197,6 +218,30 @@ rules:
 		}
 	})
 
+	t.Run("single malformed trace", func(t *testing.T) {
+		malformedTrace := filepath.Join(tmpDir, "bad.jsonl")
+		if err := os.WriteFile(malformedTrace, []byte("not valid json\n"), 0644); err != nil {
+			t.Fatalf("failed to write malformed trace: %v", err)
+		}
+		var stdout, stderr bytes.Buffer
+		code := run([]string{"check", "--spec", specFile, "--trace", malformedTrace}, &stdout, &stderr)
+		if code != 2 {
+			t.Fatalf("expected code 2 for malformed trace, got %d", code)
+		}
+	})
+
+	t.Run("single empty trace", func(t *testing.T) {
+		emptyTrace := filepath.Join(tmpDir, "empty.jsonl")
+		if err := os.WriteFile(emptyTrace, []byte(""), 0644); err != nil {
+			t.Fatalf("failed to write empty trace: %v", err)
+		}
+		var stdout, stderr bytes.Buffer
+		code := run([]string{"check", "--spec", specFile, "--trace", emptyTrace}, &stdout, &stderr)
+		if code != 2 {
+			t.Fatalf("expected code 2 for empty trace, got %d", code)
+		}
+	})
+
 	t.Run("multi traces directory", func(t *testing.T) {
 		tracesDir := filepath.Join(tmpDir, "traces")
 		if err := os.Mkdir(tracesDir, 0755); err != nil {
@@ -214,7 +259,7 @@ rules:
 		if code != 1 {
 			t.Fatalf("expected code 1, got %d (stderr: %s)", code, stderr.String())
 		}
-		if !strings.Contains(stdout.String(), "Summary: 1 of 2 traces failed") {
+		if !strings.Contains(stdout.String(), "1 passed, 1 failed, 0 errors") {
 			t.Errorf("unexpected output: %s", stdout.String())
 		}
 	})
@@ -232,6 +277,39 @@ rules:
 		code := run([]string{"check", "--spec", specFile, "--traces", tracesDir}, &stdout, &stderr)
 		if code != 0 {
 			t.Fatalf("expected code 0, got %d (stderr: %s)", code, stderr.String())
+		}
+		if !strings.Contains(stdout.String(), "1 passed, 0 failed, 0 errors") {
+			t.Errorf("unexpected output: %s", stdout.String())
+		}
+	})
+
+	t.Run("multi traces testdata mixed directory", func(t *testing.T) {
+		validSpec := filepath.Join("..", "..", "testdata", "specs", "valid.yaml")
+		tracesDir := filepath.Join("..", "..", "testdata", "traces")
+
+		var stdout, stderr bytes.Buffer
+		code := run([]string{"check", "--spec", validSpec, "--traces", tracesDir}, &stdout, &stderr)
+		if code != 2 {
+			t.Fatalf("expected code 2 for mixed traces with errors, got %d (stdout: %s, stderr: %s)", code, stdout.String(), stderr.String())
+		}
+		out := stdout.String()
+		if !strings.Contains(out, "1 passed, 2 failed, 2 errors") {
+			t.Errorf("expected '1 passed, 2 failed, 2 errors', got:\n%s", out)
+		}
+		if !strings.Contains(out, "PASS") || !strings.Contains(out, "pass.jsonl") {
+			t.Errorf("expected pass line for pass.jsonl in:\n%s", out)
+		}
+		if !strings.Contains(out, "FAIL") || !strings.Contains(out, "fail_order.jsonl") {
+			t.Errorf("expected fail line for fail_order.jsonl in:\n%s", out)
+		}
+		if !strings.Contains(out, "FAIL") || !strings.Contains(out, "fail_loop.jsonl") {
+			t.Errorf("expected fail line for fail_loop.jsonl in:\n%s", out)
+		}
+		if !strings.Contains(out, "ERROR") || !strings.Contains(out, "empty.jsonl") {
+			t.Errorf("expected error line for empty.jsonl in:\n%s", out)
+		}
+		if !strings.Contains(out, "ERROR") || !strings.Contains(out, "malformed.jsonl") {
+			t.Errorf("expected error line for malformed.jsonl in:\n%s", out)
 		}
 	})
 
@@ -279,6 +357,9 @@ func TestMiscCommands(t *testing.T) {
 		if code != 2 {
 			t.Errorf("expected code 2, got %d", code)
 		}
+		if !strings.Contains(stderr.String(), "Usage:") {
+			t.Errorf("expected usage message on stderr, got: %s", stderr.String())
+		}
 	})
 
 	t.Run("unknown command", func(t *testing.T) {
@@ -287,6 +368,12 @@ func TestMiscCommands(t *testing.T) {
 		if code != 2 {
 			t.Errorf("expected code 2, got %d", code)
 		}
+		if !strings.Contains(stderr.String(), "unknown command: unknown_cmd") {
+			t.Errorf("expected unknown command message on stderr, got: %s", stderr.String())
+		}
+		if !strings.Contains(stderr.String(), "Usage:") {
+			t.Errorf("expected usage message on stderr, got: %s", stderr.String())
+		}
 	})
 
 	t.Run("help flag", func(t *testing.T) {
@@ -294,6 +381,9 @@ func TestMiscCommands(t *testing.T) {
 		code := run([]string{"--help"}, &stdout, &stderr)
 		if code != 0 {
 			t.Errorf("expected code 0, got %d", code)
+		}
+		if !strings.Contains(stdout.String(), "Usage:") {
+			t.Errorf("expected usage message on stdout, got: %s", stdout.String())
 		}
 	})
 }

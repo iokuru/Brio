@@ -13,10 +13,12 @@ type RuleResult struct {
 
 type TraceReport struct {
 	Path    string       `json:"path,omitempty"`
+	Status  string       `json:"status,omitempty"`
 	Pass    bool         `json:"pass"`
 	Failed  int          `json:"failed"`
 	Total   int          `json:"total"`
-	Results []RuleResult `json:"results"`
+	Error   string       `json:"error,omitempty"`
+	Results []RuleResult `json:"results,omitempty"`
 }
 
 func NewTraceReport(path string, ruleList []rules.Rule, results []rules.Result) TraceReport {

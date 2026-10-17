@@ -227,7 +227,7 @@ func TestFormatMulti(t *testing.T) {
 	reports := []TraceReport{samplePassingReport(), sampleFailingReport()}
 
 	text := FormatMultiText(reports)
-	if !strings.Contains(text, "Summary: 1 of 2 traces failed") {
+	if !strings.Contains(text, "1 passed, 1 failed, 0 errors") {
 		t.Errorf("expected multi-text summary, got: %s", text)
 	}
 
@@ -235,8 +235,47 @@ func TestFormatMulti(t *testing.T) {
 	if err != nil {
 		t.Fatalf("format multi json error: %v", err)
 	}
-	if !strings.Contains(jsonStr, `"total": 2`) || !strings.Contains(jsonStr, `"failed": 1`) {
+	if !strings.Contains(jsonStr, `"total": 2`) || !strings.Contains(jsonStr, `"failed": 1`) || !strings.Contains(jsonStr, `"passed": 1`) || !strings.Contains(jsonStr, `"errors": 0`) {
 		t.Errorf("unexpected multi-json output: %s", jsonStr)
+	}
+
+	// Mixed with error
+	errReport := TraceReport{
+		Path:   "bad.jsonl",
+		Status: "error",
+		Error:  "malformed JSON",
+	}
+	mixedReports := []TraceReport{samplePassingReport(), sampleFailingReport(), errReport}
+
+	textMixed := FormatMultiText(mixedReports)
+	if !strings.Contains(textMixed, "1 passed, 1 failed, 1 errors") {
+		t.Errorf("expected mixed multi-text summary, got: %s", textMixed)
+	}
+	if !strings.Contains(textMixed, "ERROR bad.jsonl: malformed JSON") {
+		t.Errorf("expected error line in mixed text, got: %s", textMixed)
+	}
+
+	jsonMixed, err := FormatMultiJSON(mixedReports)
+	if err != nil {
+		t.Fatalf("format multi json error: %v", err)
+	}
+	if !strings.Contains(jsonMixed, `"errors": 1`) || !strings.Contains(jsonMixed, `"pass": false`) {
+		t.Errorf("unexpected mixed json output: %s", jsonMixed)
+	}
+
+	ghMixed := FormatMultiGitHub(mixedReports)
+	if !strings.Contains(ghMixed, "::error file=bad.jsonl,title=Brio error::malformed JSON") {
+		t.Errorf("expected error annotation in github output: %s", ghMixed)
+	}
+
+	singleErrText := FormatText(errReport)
+	if !strings.Contains(singleErrText, "ERROR bad.jsonl: malformed JSON") {
+		t.Errorf("expected error in FormatText: %s", singleErrText)
+	}
+
+	singleErrGH := FormatGitHub(errReport)
+	if !strings.Contains(singleErrGH, "::error file=bad.jsonl,title=Brio error::malformed JSON") {
+		t.Errorf("expected error in FormatGitHub: %s", singleErrGH)
 	}
 }
 

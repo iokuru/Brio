@@ -6,6 +6,10 @@ import (
 )
 
 func FormatText(tr TraceReport) string {
+	if tr.Error != "" {
+		return fmt.Sprintf("ERROR %s: %s\n", tr.Path, tr.Error)
+	}
+
 	var b strings.Builder
 	maxNameLen := 0
 	for _, r := range tr.Results {
@@ -32,19 +36,23 @@ func FormatText(tr TraceReport) string {
 
 func FormatMultiText(reports []TraceReport) string {
 	var b strings.Builder
-	failedTraces := 0
+	passed := 0
+	failed := 0
+	errorsCount := 0
 
-	for i, tr := range reports {
-		if i > 0 {
-			b.WriteString("\n")
-		}
-		b.WriteString(fmt.Sprintf("=== %s ===\n", tr.Path))
-		b.WriteString(FormatText(tr))
-		if !tr.Pass {
-			failedTraces++
+	for _, tr := range reports {
+		if tr.Error != "" {
+			errorsCount++
+			b.WriteString(fmt.Sprintf("ERROR %s: %s\n", tr.Path, tr.Error))
+		} else if !tr.Pass {
+			failed++
+			b.WriteString(fmt.Sprintf("FAIL  %s (%d of %d rules failed)\n", tr.Path, tr.Failed, tr.Total))
+		} else {
+			passed++
+			b.WriteString(fmt.Sprintf("PASS  %s\n", tr.Path))
 		}
 	}
 
-	b.WriteString(fmt.Sprintf("\nSummary: %d of %d traces failed\n", failedTraces, len(reports)))
+	b.WriteString(fmt.Sprintf("%d passed, %d failed, %d errors\n", passed, failed, errorsCount))
 	return b.String()
 }
