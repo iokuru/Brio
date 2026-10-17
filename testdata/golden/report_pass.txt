@@ -1,0 +1,7 @@
+PASS required_calls
+PASS forbidden_calls
+PASS order
+PASS subsequence
+PASS arg_match
+PASS limits
+0 of 6 rules failed

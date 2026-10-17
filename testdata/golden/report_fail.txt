@@ -1,0 +1,7 @@
+PASS required_calls
+PASS forbidden_calls
+FAIL order           step 4: issue_refund called before confirm_user
+PASS subsequence
+PASS arg_match
+FAIL limits          step 11: lookup_user called 4 times (max_repeat_calls: 3)
+2 of 6 rules failed

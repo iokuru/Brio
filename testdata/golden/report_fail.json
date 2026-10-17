@@ -1,0 +1,36 @@
+{
+  "path": "run_fail.jsonl",
+  "pass": false,
+  "failed": 2,
+  "total": 6,
+  "results": [
+    {
+      "name": "required_calls",
+      "pass": true
+    },
+    {
+      "name": "forbidden_calls",
+      "pass": true
+    },
+    {
+      "name": "order",
+      "pass": false,
+      "step": 4,
+      "message": "issue_refund called before confirm_user"
+    },
+    {
+      "name": "subsequence",
+      "pass": true
+    },
+    {
+      "name": "arg_match",
+      "pass": true
+    },
+    {
+      "name": "limits",
+      "pass": false,
+      "step": 11,
+      "message": "lookup_user called 4 times (max_repeat_calls: 3)"
+    }
+  ]
+}

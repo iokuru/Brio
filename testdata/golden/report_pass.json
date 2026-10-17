@@ -1,0 +1,32 @@
+{
+  "path": "run_pass.jsonl",
+  "pass": true,
+  "failed": 0,
+  "total": 6,
+  "results": [
+    {
+      "name": "required_calls",
+      "pass": true
+    },
+    {
+      "name": "forbidden_calls",
+      "pass": true
+    },
+    {
+      "name": "order",
+      "pass": true
+    },
+    {
+      "name": "subsequence",
+      "pass": true
+    },
+    {
+      "name": "arg_match",
+      "pass": true
+    },
+    {
+      "name": "limits",
+      "pass": true
+    }
+  ]
+}
