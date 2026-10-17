@@ -24,3 +24,8 @@ coverage.html
 AGENTS.md
 *LAUDE.md
 .cursor/
+
+# Environment and key material
+.env
+*.env
+*.key
