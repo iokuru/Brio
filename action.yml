@@ -1,0 +1,76 @@
+name: 'Brio Trajectory Checker'
+description: 'Grade an AI agent trajectory against a YAML spec'
+inputs:
+  spec:
+    description: 'Path to the YAML spec file'
+    required: true
+  trace:
+    description: 'Path to a single JSONL trace file'
+    required: false
+    default: ''
+  traces:
+    description: 'Path to a directory of JSONL trace files'
+    required: false
+    default: ''
+  format:
+    description: 'Output format (text, json, or github)'
+    required: false
+    default: 'github'
+  version:
+    description: 'Brio release version to download'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download Brio binary
+      shell: bash
+      run: |
+        OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+        if [ "$OS" = "macos" ]; then
+          OS="darwin"
+        fi
+
+        ARCH=$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')
+        if [ "$ARCH" = "x64" ]; then
+          ARCH="amd64"
+        fi
+
+        EXT=""
+        if [ "$OS" = "windows" ]; then
+          EXT=".exe"
+        fi
+
+        BIN_NAME="brio-${OS}-${ARCH}${EXT}"
+        VER="${{ inputs.version }}"
+
+        if [ "$VER" = "latest" ]; then
+          URL="https://github.com/${{ github.repository }}/releases/latest/download/${BIN_NAME}"
+        else
+          URL="https://github.com/${{ github.repository }}/releases/download/${VER}/${BIN_NAME}"
+        fi
+
+        echo "Downloading Brio from ${URL}..."
+        curl -sSL -f -o "brio${EXT}" "${URL}"
+        chmod +x "brio${EXT}"
+
+    - name: Run Brio check
+      shell: bash
+      run: |
+        EXT=""
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          EXT=".exe"
+        fi
+
+        CMD=("./brio${EXT}" check --spec "${{ inputs.spec }}" --format "${{ inputs.format }}")
+        if [ -n "${{ inputs.trace }}" ]; then
+          CMD+=(--trace "${{ inputs.trace }}")
+        elif [ -n "${{ inputs.traces }}" ]; then
+          CMD+=(--traces "${{ inputs.traces }}")
+        else
+          echo "Error: either trace or traces input must be specified"
+          exit 2
+        fi
+
+        "${CMD[@]}"
