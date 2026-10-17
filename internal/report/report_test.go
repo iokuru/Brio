@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/owner/brio/internal/rules"
+	"github.com/iokuru/brio/internal/rules"
 )
 
 func samplePassingReport() TraceReport {

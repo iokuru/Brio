@@ -10,10 +10,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/owner/brio/internal/report"
-	"github.com/owner/brio/internal/rules"
-	"github.com/owner/brio/internal/spec"
-	"github.com/owner/brio/internal/trace"
+	"github.com/iokuru/brio/internal/report"
+	"github.com/iokuru/brio/internal/rules"
+	"github.com/iokuru/brio/internal/spec"
+	"github.com/iokuru/brio/internal/trace"
 )
 
 var version = "dev"

@@ -1,6 +1,6 @@
 package rules
 
-import "github.com/owner/brio/internal/trace"
+import "github.com/iokuru/brio/internal/trace"
 
 type Result struct {
 	Pass    bool

@@ -3,7 +3,7 @@ package rules
 import (
 	"testing"
 
-	"github.com/owner/brio/internal/trace"
+	"github.com/iokuru/brio/internal/trace"
 )
 
 func TestSubsequenceRule(t *testing.T) {

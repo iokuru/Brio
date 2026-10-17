@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/owner/brio/internal/rules"
+	"github.com/iokuru/brio/internal/rules"
 	"gopkg.in/yaml.v3"
 )
 

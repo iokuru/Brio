@@ -1,7 +1,7 @@
 package report
 
 import (
-	"github.com/owner/brio/internal/rules"
+	"github.com/iokuru/brio/internal/rules"
 )
 
 type RuleResult struct {

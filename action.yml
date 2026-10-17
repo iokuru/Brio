@@ -46,9 +46,9 @@ runs:
         VER="${{ inputs.version }}"
 
         if [ "$VER" = "latest" ]; then
-          URL="https://github.com/${{ github.repository }}/releases/latest/download/${BIN_NAME}"
+          URL="https://github.com/iokuru/brio/releases/latest/download/${BIN_NAME}"
         else
-          URL="https://github.com/${{ github.repository }}/releases/download/${VER}/${BIN_NAME}"
+          URL="https://github.com/iokuru/brio/releases/download/${VER}/${BIN_NAME}"
         fi
 
         echo "Downloading Brio from ${URL}..."

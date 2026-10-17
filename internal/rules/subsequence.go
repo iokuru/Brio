@@ -3,7 +3,7 @@ package rules
 import (
 	"fmt"
 
-	"github.com/owner/brio/internal/trace"
+	"github.com/iokuru/brio/internal/trace"
 )
 
 type SubsequenceRule struct {

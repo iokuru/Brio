@@ -1,4 +1,4 @@
-module github.com/owner/brio
+module github.com/iokuru/brio
 
 go 1.22
 

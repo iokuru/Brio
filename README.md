@@ -7,7 +7,7 @@ Agents can arrive at a correct final response while taking an unsafe or ineffici
 ## Installation
 
 ```bash
-go install github.com/<owner>/brio/cmd/brio@latest
+go install github.com/iokuru/brio/cmd/brio@latest
 ```
 
 Prebuilt static binaries for Linux, macOS, and Windows are also available on the GitHub Releases page.
@@ -84,7 +84,7 @@ FAIL limits          step 11: lookup_user called 4 times (max_repeat_calls: 3)
 
 ```yaml
 - name: Grade Agent Trajectory
-  uses: <owner>/brio@v1
+  uses: iokuru/brio@v1
   with:
     spec: spec.yaml
     trace: run.jsonl

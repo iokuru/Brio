@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"regexp"
 
-	"github.com/owner/brio/internal/trace"
+	"github.com/iokuru/brio/internal/trace"
 )
 
 type ArgMatchRule struct {
