@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/owner/brio/internal/rules"
 	"gopkg.in/yaml.v3"
 )
 
@@ -62,6 +63,48 @@ type Spec struct {
 	Name  string
 	Path  string
 	Rules []RuleDef
+}
+
+func (s *Spec) BuildRules() []rules.Rule {
+	var result []rules.Rule
+	for _, r := range s.Rules {
+		switch r.Kind {
+		case "required_calls":
+			result = append(result, rules.NewRequiredCalls(r.RequiredCalls))
+		case "forbidden_calls":
+			result = append(result, rules.NewForbiddenCalls(r.ForbiddenCalls))
+		case "order":
+			var pairs []rules.OrderPair
+			for _, item := range r.Order {
+				pairs = append(pairs, rules.OrderPair{
+					Before:      item.Before,
+					After:       item.After,
+					Immediately: item.Immediately,
+				})
+			}
+			result = append(result, rules.NewOrder(pairs))
+		case "subsequence":
+			result = append(result, rules.NewSubsequence(r.Subsequence))
+		case "arg_match":
+			result = append(result, rules.NewArgMatch(
+				r.ArgMatch.Call,
+				r.ArgMatch.Arg,
+				r.ArgMatch.Predicate,
+				r.ArgMatch.Equals,
+				r.ArgMatch.Regex,
+				r.ArgMatch.RegexStr,
+				r.ArgMatch.Present,
+			))
+		case "limits":
+			result = append(result, rules.NewLimits(
+				r.Limits.MaxSteps,
+				r.Limits.MaxCostUSD,
+				r.Limits.MaxLatencyMS,
+				r.Limits.MaxRepeatCalls,
+			))
+		}
+	}
+	return result
 }
 
 func Load(r io.Reader, path string) (*Spec, error) {

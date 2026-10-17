@@ -75,6 +75,17 @@ rules:
 	if r5.Kind != "limits" || *r5.Limits.MaxSteps != 20 || *r5.Limits.MaxCostUSD != 0.25 || *r5.Limits.MaxLatencyMS != 15000 || *r5.Limits.MaxRepeatCalls != 3 {
 		t.Errorf("unexpected rule 5: %+v", r5)
 	}
+
+	builtRules := sp.BuildRules()
+	if len(builtRules) != 6 {
+		t.Fatalf("expected 6 built rules, got %d", len(builtRules))
+	}
+	expectedNames := []string{"required_calls", "forbidden_calls", "order", "subsequence", "arg_match", "limits"}
+	for i, r := range builtRules {
+		if r.Name() != expectedNames[i] {
+			t.Errorf("rule %d name expected %q, got %q", i, expectedNames[i], r.Name())
+		}
+	}
 }
 
 func TestLoadValidationErrors(t *testing.T) {
