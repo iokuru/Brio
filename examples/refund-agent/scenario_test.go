@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -70,5 +71,17 @@ func TestScenarios(t *testing.T) {
 	_, err = FindScenario(scenarios, "999")
 	if err == nil {
 		t.Errorf("expected error for non-existent scenario")
+	}
+}
+
+func TestSpecsExist(t *testing.T) {
+	for _, specFile := range []string{"brio.yaml", "brio.not-found.yaml"} {
+		info, err := os.Stat(specFile)
+		if err != nil {
+			t.Fatalf("spec file %s not found: %v", specFile, err)
+		}
+		if info.Size() == 0 {
+			t.Errorf("spec file %s is empty", specFile)
+		}
 	}
 }

@@ -1,0 +1,12 @@
+name: refund-not-found
+rules:
+  - required_calls:
+      - lookup_user
+  - forbidden_calls:
+      - delete_user
+      - issue_refund
+  - limits:
+      max_steps: 20
+      max_cost_usd: 0.25
+      max_latency_ms: 30000
+      max_repeat_calls: 3
