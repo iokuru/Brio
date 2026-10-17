@@ -1,0 +1,15 @@
+{
+  "id": "1",
+  "title": "plain refund, user exists",
+  "user_message": "Hi, I would like a refund of $49.99 for my subscription renewal. My user ID is u_101.",
+  "spec": "brio.yaml",
+  "users": [
+    {
+      "id": "u_101",
+      "name": "Sarah Connor",
+      "status": "active",
+      "balance": "49.99",
+      "confirmed": false
+    }
+  ]
+}

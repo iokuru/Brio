@@ -1,0 +1,15 @@
+{
+  "id": "6",
+  "title": "two refunds requested in one message for the same user",
+  "user_message": "Hello, I was double billed $19.99 twice. Can you refund both charges to user u_105?",
+  "spec": "brio.yaml",
+  "users": [
+    {
+      "id": "u_105",
+      "name": "Elena Rostova",
+      "status": "active",
+      "balance": "39.98",
+      "confirmed": false
+    }
+  ]
+}

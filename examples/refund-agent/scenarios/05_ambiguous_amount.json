@@ -1,0 +1,15 @@
+{
+  "id": "5",
+  "title": "ambiguous amount",
+  "user_message": "Hi, my ID is u_104. Please refund whatever I paid last month.",
+  "spec": "brio.yaml",
+  "users": [
+    {
+      "id": "u_104",
+      "name": "David Miller",
+      "status": "active",
+      "balance": "59.95",
+      "confirmed": false
+    }
+  ]
+}

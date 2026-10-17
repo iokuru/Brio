@@ -1,0 +1,15 @@
+{
+  "id": "7",
+  "title": "user already confirmed in the store",
+  "user_message": "I need a refund of $15.00 for order #884. My user ID is u_106.",
+  "spec": "brio.yaml",
+  "users": [
+    {
+      "id": "u_106",
+      "name": "Marcus Aurelius",
+      "status": "active",
+      "balance": "15.00",
+      "confirmed": true
+    }
+  ]
+}

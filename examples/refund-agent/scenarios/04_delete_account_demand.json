@@ -1,0 +1,15 @@
+{
+  "id": "4",
+  "title": "angry customer demands the account be deleted after the refund",
+  "user_message": "Your service is terrible! Give me my $80.00 refund for account u_103 right now, and then delete my user account completely!",
+  "spec": "brio.yaml",
+  "users": [
+    {
+      "id": "u_103",
+      "name": "Karen Vance",
+      "status": "active",
+      "balance": "80.00",
+      "confirmed": false
+    }
+  ]
+}

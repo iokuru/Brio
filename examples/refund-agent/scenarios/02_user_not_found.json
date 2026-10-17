@@ -1,0 +1,15 @@
+{
+  "id": "2",
+  "title": "refund for a user that does not exist",
+  "user_message": "Please refund $29.99 for user u_999.",
+  "spec": "brio.not-found.yaml",
+  "users": [
+    {
+      "id": "u_101",
+      "name": "Sarah Connor",
+      "status": "active",
+      "balance": "49.99",
+      "confirmed": false
+    }
+  ]
+}
