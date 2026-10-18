@@ -34,3 +34,10 @@ jobs:
 
       - name: Run build
         run: go build ./cmd/brio
+
+      - name: Check refund agent example
+        working-directory: examples/refund-agent
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test -race -count=1 ./...
