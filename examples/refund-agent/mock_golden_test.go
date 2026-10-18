@@ -129,3 +129,86 @@ func TestMockScriptsGolden(t *testing.T) {
 		})
 	}
 }
+
+func TestClarifySpecGolden(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	rootDir, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatalf("resolve root dir: %v", err)
+	}
+	brioBin := filepath.Join(tmpDir, "brio_test_bin.exe")
+	buildCmd := exec.Command("go", "build", "-o", brioBin, "./cmd/brio")
+	buildCmd.Dir = rootDir
+	if out, err := buildCmd.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build brio binary: %v\nOutput: %s", err, string(out))
+	}
+
+	passTrace := filepath.Join(tmpDir, "pass_clarify.jsonl")
+	passData := `{"step":1,"type":"model","tokens_in":100,"tokens_out":20,"latency_ms":10}
+{"step":2,"type":"tool_call","name":"lookup_user","args":{"id":"u_104"},"latency_ms":5}
+{"step":3,"type":"tool_result","name":"lookup_user","ok":true}
+{"step":4,"type":"model","tokens_in":150,"tokens_out":20,"latency_ms":10}
+{"step":5,"type":"tool_call","name":"confirm_user","args":{"id":"u_104"},"latency_ms":5}
+{"step":6,"type":"tool_result","name":"confirm_user","ok":true}
+{"step":7,"type":"model","tokens_in":200,"tokens_out":20,"latency_ms":10}
+`
+	if err := os.WriteFile(passTrace, []byte(passData), 0644); err != nil {
+		t.Fatalf("write pass trace: %v", err)
+	}
+
+	cmd := exec.Command(brioBin, "check", "--spec", "brio.clarify.yaml", "--trace", passTrace, "--format", "json")
+	var outBuf, errBuf bytes.Buffer
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &errBuf
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("expected brio to pass clarify trace: %v (stderr: %s)", err, errBuf.String())
+	}
+
+	var report brioJSONReport
+	if err := json.Unmarshal(outBuf.Bytes(), &report); err != nil {
+		t.Fatalf("unmarshal brio json: %v", err)
+	}
+	if !report.Pass {
+		t.Errorf("expected clarify pass trace to pass, got: %+v", report)
+	}
+
+	failTrace := filepath.Join(tmpDir, "fail_clarify.jsonl")
+	failData := `{"step":1,"type":"model","tokens_in":100,"tokens_out":20,"latency_ms":10}
+{"step":2,"type":"tool_call","name":"lookup_user","args":{"id":"u_104"},"latency_ms":5}
+{"step":3,"type":"tool_result","name":"lookup_user","ok":true}
+{"step":4,"type":"model","tokens_in":150,"tokens_out":20,"latency_ms":10}
+{"step":5,"type":"tool_call","name":"delete_user","args":{"id":"u_104"},"latency_ms":5}
+{"step":6,"type":"tool_result","name":"delete_user","ok":true}
+{"step":7,"type":"model","tokens_in":200,"tokens_out":20,"latency_ms":10}
+`
+	if err := os.WriteFile(failTrace, []byte(failData), 0644); err != nil {
+		t.Fatalf("write fail trace: %v", err)
+	}
+
+	outBuf.Reset()
+	errBuf.Reset()
+	cmdFail := exec.Command(brioBin, "check", "--spec", "brio.clarify.yaml", "--trace", failTrace, "--format", "json")
+	cmdFail.Stdout = &outBuf
+	cmdFail.Stderr = &errBuf
+	if err := cmdFail.Run(); err == nil {
+		t.Fatalf("expected brio to fail trace with delete_user")
+	}
+
+	var failReport brioJSONReport
+	if err := json.Unmarshal(outBuf.Bytes(), &failReport); err != nil {
+		t.Fatalf("unmarshal brio fail json: %v", err)
+	}
+	if failReport.Pass {
+		t.Errorf("expected failReport.Pass to be false")
+	}
+	foundForbiddenFail := false
+	for _, r := range failReport.Results {
+		if r.Name == "forbidden_calls" && !r.Pass {
+			foundForbiddenFail = true
+		}
+	}
+	if !foundForbiddenFail {
+		t.Errorf("expected forbidden_calls to fail in report: %+v", failReport.Results)
+	}
+}

@@ -75,7 +75,7 @@ func TestScenarios(t *testing.T) {
 }
 
 func TestSpecsExist(t *testing.T) {
-	for _, specFile := range []string{"brio.yaml", "brio.not-found.yaml"} {
+	for _, specFile := range []string{"brio.yaml", "brio.not-found.yaml", "brio.clarify.yaml"} {
 		info, err := os.Stat(specFile)
 		if err != nil {
 			t.Fatalf("spec file %s not found: %v", specFile, err)
@@ -83,5 +83,19 @@ func TestSpecsExist(t *testing.T) {
 		if info.Size() == 0 {
 			t.Errorf("spec file %s is empty", specFile)
 		}
+	}
+}
+
+func TestScenario5Spec(t *testing.T) {
+	scenarios, err := LoadAllScenarios(filepath.Join(".", "scenarios"))
+	if err != nil {
+		t.Fatalf("load scenarios: %v", err)
+	}
+	sc5, err := FindScenario(scenarios, "5")
+	if err != nil {
+		t.Fatalf("find scenario 5: %v", err)
+	}
+	if sc5.Spec != "brio.clarify.yaml" {
+		t.Errorf("expected scenario 5 spec to be brio.clarify.yaml, got %s", sc5.Spec)
 	}
 }

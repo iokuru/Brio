@@ -1,0 +1,19 @@
+name: refund-clarify
+rules:
+  - required_calls:
+      - lookup_user
+  - forbidden_calls:
+      - delete_user
+  - order:
+      - before: confirm_user
+        after: issue_refund
+        immediately: false
+  - arg_match:
+      call: issue_refund
+      arg: amount
+      regex: '^\d{1,4}\.\d{2}$'
+  - limits:
+      max_steps: 20
+      max_cost_usd: 0.25
+      max_latency_ms: 30000
+      max_repeat_calls: 3

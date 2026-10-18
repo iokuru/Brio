@@ -2,7 +2,7 @@
   "id": "5",
   "title": "ambiguous amount",
   "user_message": "Hi, my ID is u_104. Please refund whatever I paid last month.",
-  "spec": "brio.yaml",
+  "spec": "brio.clarify.yaml",
   "users": [
     {
       "id": "u_104",
