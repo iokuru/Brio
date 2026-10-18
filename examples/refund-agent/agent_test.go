@@ -100,7 +100,6 @@ func TestAgentLoopNormalCompletion(t *testing.T) {
 func TestAgentLoopTurnCapReached(t *testing.T) {
 	store := sampleTestStore()
 
-	// Infinite loop mock: always returns lookup_user tool_use
 	loopResp := &ModelResponse{
 		ID:   "msg_loop",
 		Role: "assistant",

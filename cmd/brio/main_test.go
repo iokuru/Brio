@@ -42,7 +42,6 @@ func TestInitCommand(t *testing.T) {
 		t.Errorf("unexpected starter spec content: %s", string(data))
 	}
 
-	// Validate starter spec passes spec validation
 	sp, err := spec.LoadFile(outPath)
 	if err != nil {
 		t.Fatalf("starter spec failed validation: %v", err)
@@ -54,7 +53,6 @@ func TestInitCommand(t *testing.T) {
 		t.Errorf("expected rules in starter spec")
 	}
 
-	// Refuse overwrite without --force
 	stdout.Reset()
 	stderr.Reset()
 	code = run([]string{"init", "--out", outPath}, &stdout, &stderr)
@@ -65,7 +63,6 @@ func TestInitCommand(t *testing.T) {
 		t.Errorf("expected file already exists error, got: %s", stderr.String())
 	}
 
-	// Overwrite with --force
 	stdout.Reset()
 	stderr.Reset()
 	code = run([]string{"init", "--out", outPath, "--force"}, &stdout, &stderr)

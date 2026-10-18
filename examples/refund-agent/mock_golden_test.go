@@ -15,7 +15,6 @@ import (
 func TestMockScriptsGolden(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Build brio binary from root module directory once for tests
 	rootDir, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatalf("resolve root dir: %v", err)

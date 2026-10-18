@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-// ScriptedMockModel provides fixed tool_use sequences for tests and offline runs.
 type ScriptedMockModel struct {
 	ScriptName string
 	ScenarioID string

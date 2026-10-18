@@ -239,7 +239,6 @@ func TestFormatMulti(t *testing.T) {
 		t.Errorf("unexpected multi-json output: %s", jsonStr)
 	}
 
-	// Mixed with error
 	errReport := TraceReport{
 		Path:   "bad.jsonl",
 		Status: "error",
