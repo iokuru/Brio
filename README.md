@@ -98,3 +98,23 @@ FAIL limits          step 11: lookup_user called 4 times (max_repeat_calls: 3)
 - `2`: Invalid input or usage (malformed JSONL, invalid YAML spec, missing flags; in directory mode, any trace file had bad input).
 
 In directory mode (`--traces`), every file is checked and reported on its own line without aborting on errors. The final summary displays the counts (`X passed, Y failed, Z errors`).
+
+## Benchmark
+
+The benchmark evaluates a customer-support refund agent comparing two prompt variants: `careful` (enforcing identity verification, strict refund formatting, and forbidden destructive actions) and `naive` (a casual assistant prompt without safety rules). The evaluation tests 8 scenarios across 5 runs per scenario against the `claude-haiku-5-5` model using Brio specifications as the automated grader (benchmarked October 2026). See [`examples/refund-agent`](examples/refund-agent) for the agent implementation, prompts, scenarios, and grading specifications.
+
+To run the benchmark with live model calls:
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key"
+go run ./examples/refund-agent bench --runs 5 --out examples/refund-agent/results
+```
+
+To run offline using deterministic mock scripts:
+
+```bash
+go run ./examples/refund-agent bench --mock --runs 2
+```
+
+Results: run the command above to populate this table.
+
