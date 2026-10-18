@@ -29,3 +29,7 @@ AGENTS.md
 .env
 *.env
 *.key
+
+# Local Go workspace
+go.work
+go.work.sum

@@ -13,21 +13,6 @@ import (
 	"github.com/iokuru/brio/internal/trace"
 )
 
-type brioJSONResult struct {
-	Name    string `json:"name"`
-	Pass    bool   `json:"pass"`
-	Step    int    `json:"step"`
-	Message string `json:"message"`
-}
-
-type brioJSONReport struct {
-	Path    string           `json:"path"`
-	Pass    bool             `json:"pass"`
-	Failed  int              `json:"failed"`
-	Total   int              `json:"total"`
-	Results []brioJSONResult `json:"results"`
-}
-
 func TestMockScriptsGolden(t *testing.T) {
 	tmpDir := t.TempDir()
 
