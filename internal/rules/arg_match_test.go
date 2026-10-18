@@ -113,7 +113,7 @@ func TestArgMatchRule(t *testing.T) {
 			},
 			wantPass: false,
 			wantStep: 3,
-			wantSub:  `issue_refund` + ``, // will check lookup_user below
+			wantSub:  "issue_refund",
 		},
 		{
 			name: "present true succeeds when present",

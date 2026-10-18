@@ -224,7 +224,6 @@ func (c *OpenAIClient) SendMessage(ctx context.Context, system string, messages 
 				}
 				apiMsgs = append(apiMsgs, asstMsg)
 			} else {
-				// User message carrying tool results
 				for _, b := range content {
 					if b.Type == "tool_result" {
 						apiMsgs = append(apiMsgs, openAIMessage{
@@ -293,7 +292,6 @@ func (c *OpenAIClient) SendMessage(ctx context.Context, system string, messages 
 			return nil, fmt.Errorf("read response body: %w", err)
 		}
 
-		// Retry on 429 and 5xx if retries remaining
 		if (resp.StatusCode == http.StatusTooManyRequests || (resp.StatusCode >= 500 && resp.StatusCode <= 599)) && attempt < maxRetries {
 			delay := parseRetryAfter(resp.Header.Get("Retry-After"))
 			if delay <= 0 {

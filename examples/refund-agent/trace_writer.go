@@ -8,10 +8,9 @@ import (
 	"sync"
 )
 
-// Approximate pricing per million tokens; should be verified against the current price list.
 const (
-	PricePerMillionInputTokens  = 1.00 // $1.00 per 1M input tokens (approximate)
-	PricePerMillionOutputTokens = 5.00 // $5.00 per 1M output tokens (approximate)
+	PricePerMillionInputTokens  = 1.00
+	PricePerMillionOutputTokens = 5.00
 )
 
 type flusher interface {

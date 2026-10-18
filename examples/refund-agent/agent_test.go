@@ -18,7 +18,6 @@ type sequenceMockClient struct {
 func (m *sequenceMockClient) SendMessage(ctx context.Context, system string, messages []Message, tools []Tool) (*ModelResponse, error) {
 	m.sentMsgs = append(m.sentMsgs, messages)
 	if m.calls >= len(m.responses) {
-		// Default response: text stop
 		return &ModelResponse{
 			ID:         "msg_end",
 			Type:       "message",
@@ -86,7 +85,6 @@ func TestAgentLoopNormalCompletion(t *testing.T) {
 		t.Fatalf("expected 4 trace lines (model, tool_call, tool_result, model), got %d:\n%s", len(lines), traceBuf.String())
 	}
 
-	// Verify steps strictly increase from 1
 	for i, l := range lines {
 		var raw map[string]any
 		if err := json.Unmarshal([]byte(l), &raw); err != nil {
@@ -188,7 +186,6 @@ func TestAgentLoopToolErrorSurfacedToModel(t *testing.T) {
 		t.Fatalf("unexpected agent error: %v", err)
 	}
 
-	// Verify error was surfaced in tool_result to the model in the second call
 	if len(mock.sentMsgs) < 2 {
 		t.Fatalf("expected at least 2 calls to model, got %d", len(mock.sentMsgs))
 	}
@@ -202,7 +199,6 @@ func TestAgentLoopToolErrorSurfacedToModel(t *testing.T) {
 		t.Errorf("expected tool error in tool_result block, got: %+v", blocks[0])
 	}
 
-	// Verify trace recorded tool_result with ok: false
 	traceOutput := traceBuf.String()
 	if !strings.Contains(traceOutput, `"ok":false`) {
 		t.Errorf("expected ok:false in trace, got:\n%s", traceOutput)
@@ -253,7 +249,6 @@ func TestAgentLoopMalformedToolUse(t *testing.T) {
 		t.Fatalf("unexpected agent error: %v", err)
 	}
 
-	// Check tool_result in trace has ok: false
 	if !strings.Contains(traceBuf.String(), `"ok":false`) {
 		t.Errorf("expected ok:false in trace for malformed tool call, got:\n%s", traceBuf.String())
 	}

@@ -33,7 +33,6 @@ func RunAgent(ctx context.Context, cfg AgentConfig, userMessage string) error {
 			return fmt.Errorf("model turn %d: %w", turn+1, err)
 		}
 
-		// Record model step
 		if cfg.TraceWriter != nil {
 			tokensIn := resp.Usage.InputTokens
 			tokensOut := resp.Usage.OutputTokens
@@ -52,7 +51,6 @@ func RunAgent(ctx context.Context, cfg AgentConfig, userMessage string) error {
 			}
 		}
 
-		// Collect tool_use blocks
 		var toolUses []ContentBlock
 		for _, b := range resp.Content {
 			if b.Type == "tool_use" {
@@ -60,18 +58,15 @@ func RunAgent(ctx context.Context, cfg AgentConfig, userMessage string) error {
 			}
 		}
 
-		// Add assistant response to conversation history
 		messages = append(messages, Message{
 			Role:    "assistant",
 			Content: resp.Content,
 		})
 
-		// If model did not request any tools, conversation is complete
 		if len(toolUses) == 0 {
 			return nil
 		}
 
-		// Execute each tool and collect tool_result blocks
 		var resultBlocks []ContentBlock
 		for _, tu := range toolUses {
 			start := time.Now()
@@ -111,7 +106,6 @@ func RunAgent(ctx context.Context, cfg AgentConfig, userMessage string) error {
 			})
 		}
 
-		// Append tool results as user message
 		messages = append(messages, Message{
 			Role:    "user",
 			Content: resultBlocks,

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	// Replaces with root module to verify emitted trace lines parse cleanly with internal/trace
 	"github.com/iokuru/brio/internal/trace"
 )
 
@@ -78,12 +77,9 @@ func TestMockScriptsGolden(t *testing.T) {
 				TraceWriter:  tw,
 			}
 
-			// Run agent
 			_ = RunAgent(context.Background(), cfg, "Process refund for u_1 for 49.99")
-
 			traceBytes := traceBuf.Bytes()
 
-			// 1. Assert emitted trace parses cleanly with root module's trace reader
 			parsedTrace, err := trace.Parse(bytes.NewReader(traceBytes), tc.script+".jsonl")
 			if err != nil {
 				t.Fatalf("failed to parse trace with internal/trace: %v\nTrace:\n%s", err, string(traceBytes))
@@ -92,20 +88,17 @@ func TestMockScriptsGolden(t *testing.T) {
 				t.Fatalf("parsed trace has 0 steps")
 			}
 
-			// Write trace to temp file for brio grading
 			tracePath := filepath.Join(tmpDir, tc.script+".jsonl")
 			if err := os.WriteFile(tracePath, traceBytes, 0644); err != nil {
 				t.Fatalf("failed to write trace file: %v", err)
 			}
 
-			// 2. Invoke brio CLI on the trace and verify verdict
 			cmd := exec.Command(brioBin, "check", "--spec", tc.specFile, "--trace", tracePath, "--format", "json")
 			var outBuf, errBuf bytes.Buffer
 			cmd.Stdout = &outBuf
 			cmd.Stderr = &errBuf
 			runErr := cmd.Run()
 
-			// Exit code is 0 on pass, 1 on rule fail
 			if tc.wantPass && runErr != nil {
 				t.Fatalf("expected brio exit code 0 for passing run, got error: %v (stderr: %s)", runErr, errBuf.String())
 			}

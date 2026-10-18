@@ -196,7 +196,6 @@ func runCheck(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	// Multi-trace mode
 	files, err := os.ReadDir(*tracesDir)
 	if err != nil {
 		fmt.Fprintf(stderr, "error reading traces directory: %v\n", err)

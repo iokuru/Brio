@@ -290,9 +290,7 @@ func RunBenchmark(ctx context.Context, cfg BenchConfig, stdout, stderr io.Writer
 }
 
 func printSummaryTable(stats map[string]*VariantStats, variants []string, w io.Writer) {
-	fmt.Fprintln(w, "\n=======================================================")
-	fmt.Fprintln(w, "                    BENCHMARK RESULTS                  ")
-	fmt.Fprintln(w, "=======================================================")
+	fmt.Fprintln(w, "\nBENCHMARK RESULTS")
 
 	for _, v := range variants {
 		s := stats[v]
@@ -329,7 +327,7 @@ func printSummaryTable(stats map[string]*VariantStats, variants []string, w io.W
 		}
 	}
 
-	fmt.Fprintln(w, "\n-------------------------------------------------------")
+	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "| Metric                      | Careful    | Naive     |")
 	fmt.Fprintln(w, "|-----------------------------|------------|-----------|")
 
@@ -385,5 +383,4 @@ func printSummaryTable(stats map[string]*VariantStats, variants []string, w io.W
 		label := fmt.Sprintf("%s pass", r)
 		fmt.Fprintf(w, "| %-27s | %9.1f%% | %8.1f%% |\n", label, cRate, nRate)
 	}
-	fmt.Fprintln(w, "-------------------------------------------------------")
 }

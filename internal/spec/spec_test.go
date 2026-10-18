@@ -40,37 +40,31 @@ rules:
 		t.Fatalf("expected 6 rules, got %d", len(sp.Rules))
 	}
 
-	// Verify required_calls
 	r0 := sp.Rules[0]
 	if r0.Kind != "required_calls" || len(r0.RequiredCalls) != 2 {
 		t.Errorf("unexpected rule 0: %+v", r0)
 	}
 
-	// Verify forbidden_calls
 	r1 := sp.Rules[1]
 	if r1.Kind != "forbidden_calls" || len(r1.ForbiddenCalls) != 1 {
 		t.Errorf("unexpected rule 1: %+v", r1)
 	}
 
-	// Verify order
 	r2 := sp.Rules[2]
 	if r2.Kind != "order" || len(r2.Order) != 1 || r2.Order[0].Before != "confirm_user" || r2.Order[0].After != "issue_refund" || r2.Order[0].Immediately {
 		t.Errorf("unexpected rule 2: %+v", r2)
 	}
 
-	// Verify subsequence
 	r3 := sp.Rules[3]
 	if r3.Kind != "subsequence" || len(r3.Subsequence) != 3 {
 		t.Errorf("unexpected rule 3: %+v", r3)
 	}
 
-	// Verify arg_match
 	r4 := sp.Rules[4]
 	if r4.Kind != "arg_match" || r4.ArgMatch.Call != "issue_refund" || r4.ArgMatch.Arg != "amount" || r4.ArgMatch.Predicate != "regex" {
 		t.Errorf("unexpected rule 4: %+v", r4)
 	}
 
-	// Verify limits
 	r5 := sp.Rules[5]
 	if r5.Kind != "limits" || *r5.Limits.MaxSteps != 20 || *r5.Limits.MaxCostUSD != 0.25 || *r5.Limits.MaxLatencyMS != 15000 || *r5.Limits.MaxRepeatCalls != 3 {
 		t.Errorf("unexpected rule 5: %+v", r5)

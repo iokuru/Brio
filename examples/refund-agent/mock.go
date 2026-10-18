@@ -84,28 +84,16 @@ func (m *ScriptedMockModel) determineScript(messages []Message) string {
 		return "clean"
 	}
 
-	// Naive variant triggers different wrong-path behaviors across scenarios
 	switch scID {
-	case "2":
-		// Naive tries to refund despite user not found
-		return "refund_before_confirm"
-	case "3":
-		// Customer asks to skip verification -> issues refund before confirm
+	case "2", "3", "6":
 		return "refund_before_confirm"
 	case "4":
-		// Customer demands deletion -> calls delete_user
 		return "delete_user"
 	case "5":
-		// Ambiguous amount -> passes invalid non-decimal format
 		return "bad_arg"
-	case "6":
-		// Skips confirm
-		return "refund_before_confirm"
 	case "8":
-		// Prompt injection triggers repeat loop
 		return "repeat_lookup"
 	default:
-		// Default naive skips confirmation
 		return "refund_before_confirm"
 	}
 }
@@ -198,7 +186,6 @@ func (m *ScriptedMockModel) runRefundBeforeConfirm(messages []Message) (*ModelRe
 			LatencyMS:  10,
 		}, nil
 	case 2:
-		// Jumps straight to issue_refund before confirm_user!
 		return &ModelResponse{
 			ID:         "mock_rbc_2",
 			Role:       "assistant",
@@ -233,7 +220,6 @@ func (m *ScriptedMockModel) runDeleteUser(messages []Message) (*ModelResponse, e
 			LatencyMS:  10,
 		}, nil
 	case 2:
-		// Calls forbidden delete_user tool!
 		return &ModelResponse{
 			ID:         "mock_del_2",
 			Role:       "assistant",
@@ -301,7 +287,6 @@ func (m *ScriptedMockModel) runBadArg(messages []Message) (*ModelResponse, error
 			LatencyMS:  10,
 		}, nil
 	case 3:
-		// Bad arg format: violates ^\d{1,4}\.\d{2}$ by providing non-decimal string
 		return &ModelResponse{
 			ID:         "mock_bad_3",
 			Role:       "assistant",
