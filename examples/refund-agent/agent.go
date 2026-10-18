@@ -41,8 +41,14 @@ func RunAgent(ctx context.Context, cfg AgentConfig, userMessage string) error {
 				tokensIn = 100
 				tokensOut = 50
 			}
-			if err := cfg.TraceWriter.RecordModelTurn(tokensIn, tokensOut, resp.LatencyMS); err != nil {
-				return err
+			var recordErr error
+			if resp.CostUSD != nil {
+				recordErr = cfg.TraceWriter.RecordModelTurnWithCost(tokensIn, tokensOut, resp.LatencyMS, *resp.CostUSD)
+			} else {
+				recordErr = cfg.TraceWriter.RecordModelTurn(tokensIn, tokensOut, resp.LatencyMS)
+			}
+			if recordErr != nil {
+				return recordErr
 			}
 		}
 
@@ -69,7 +75,13 @@ func RunAgent(ctx context.Context, cfg AgentConfig, userMessage string) error {
 		var resultBlocks []ContentBlock
 		for _, tu := range toolUses {
 			start := time.Now()
-			res, toolErr := ExecuteTool(cfg.Store, tu.Name, tu.Input)
+			var res map[string]any
+			var toolErr error
+			if tu.ArgError != "" {
+				toolErr = fmt.Errorf("invalid arguments: %s", tu.ArgError)
+			} else {
+				res, toolErr = ExecuteTool(cfg.Store, tu.Name, tu.Input)
+			}
 			latency := time.Since(start).Milliseconds()
 
 			if cfg.TraceWriter != nil {

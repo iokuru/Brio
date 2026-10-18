@@ -41,8 +41,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 func printUsage(w io.Writer) {
 	fmt.Fprintf(w, `Usage:
-  refund-agent run --prompt careful|naive --scenario 3 [--out trace.jsonl] [--mock [script]]
-  refund-agent bench [--runs 5] [--out results] [--mock]
+  refund-agent run --prompt careful|naive --scenario 3 [--out trace.jsonl] [--provider anthropic|openai-compat] [--base-url url] [--model model] [--mock [script]]
+  refund-agent bench [--runs 5] [--out results] [--provider anthropic|openai-compat] [--base-url url] [--model model] [--mock]
 `)
 }
 
@@ -76,6 +76,9 @@ func runAgentCmd(args []string, stdout, stderr io.Writer) int {
 	promptVariant := fs.String("prompt", "careful", "prompt variant: careful or naive")
 	scenarioID := fs.String("scenario", "1", "scenario ID (1-8)")
 	outPath := fs.String("out", "", "output trace JSONL path (default stdout)")
+	provider := fs.String("provider", "", "model provider: anthropic or openai-compat (env: BRIO_PROVIDER)")
+	baseURL := fs.String("base-url", "", "custom API base URL (env: BRIO_BASE_URL)")
+	modelName := fs.String("model", "", "model name (env: BRIO_MODEL)")
 
 	var mf mockFlag
 	fs.Var(&mf, "mock", "use scripted mock (optional script name: clean, refund_before_confirm, delete_user, repeat_lookup)")
@@ -137,12 +140,13 @@ func runAgentCmd(args []string, stdout, stderr io.Writer) int {
 			model = NewScriptedMockModel(mf.script)
 		}
 	} else {
-		anthropicClient, err := NewAnthropicClient()
+		pCfg := resolveProviderConfig(*provider, *baseURL, *modelName)
+		client, err := CreateModelClient(pCfg)
 		if err != nil {
 			fmt.Fprintf(stderr, "error: %v (use --mock for offline mode)\n", err)
 			return 2
 		}
-		model = anthropicClient
+		model = client
 	}
 
 	cfg := AgentConfig{
@@ -172,6 +176,9 @@ func runBenchCmd(args []string, stdout, stderr io.Writer) int {
 	outDir := fs.String("out", "results", "output directory for traces")
 	mock := fs.Bool("mock", false, "use scripted mock model for deterministic offline benchmark")
 	brioBin := fs.String("brio-bin", "", "path to brio binary (built automatically if empty)")
+	provider := fs.String("provider", "", "model provider: anthropic or openai-compat (env: BRIO_PROVIDER)")
+	baseURL := fs.String("base-url", "", "custom API base URL (env: BRIO_BASE_URL)")
+	modelName := fs.String("model", "", "model name (env: BRIO_MODEL)")
 
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -183,6 +190,9 @@ func runBenchCmd(args []string, stdout, stderr io.Writer) int {
 		UseMock:      *mock,
 		ScenariosDir: "scenarios",
 		BrioBin:      *brioBin,
+		Provider:     *provider,
+		BaseURL:      *baseURL,
+		Model:        *modelName,
 	}
 
 	if err := RunBenchmark(context.Background(), benchCfg, stdout, stderr); err != nil {

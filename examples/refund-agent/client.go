@@ -31,6 +31,7 @@ type ContentBlock struct {
 	ToolUseID string         `json:"tool_use_id,omitempty"`
 	Content   string         `json:"content,omitempty"`
 	IsError   bool           `json:"is_error,omitempty"`
+	ArgError  string         `json:"arg_error,omitempty"`
 }
 
 type ModelUsage struct {
@@ -45,6 +46,7 @@ type ModelResponse struct {
 	Content    []ContentBlock `json:"content"`
 	StopReason string         `json:"stop_reason"`
 	Usage      ModelUsage     `json:"usage"`
+	CostUSD    *float64       `json:"cost_usd,omitempty"`
 	LatencyMS  int64          `json:"latency_ms"`
 }
 
@@ -60,19 +62,31 @@ type AnthropicClient struct {
 }
 
 func NewAnthropicClient() (*AnthropicClient, error) {
+	return NewAnthropicClientWithConfig("", "")
+}
+
+func NewAnthropicClientWithConfig(baseURL, model string) (*AnthropicClient, error) {
 	key := os.Getenv("ANTHROPIC_API_KEY")
 	if strings.TrimSpace(key) == "" {
 		return nil, ErrAPIKeyMissing
 	}
-	model := os.Getenv("BRIO_MODEL")
+	if model == "" {
+		model = os.Getenv("BRIO_MODEL")
+	}
 	if strings.TrimSpace(model) == "" {
 		model = "claude-haiku-5-5"
+	}
+	if baseURL == "" {
+		baseURL = os.Getenv("BRIO_BASE_URL")
+	}
+	if strings.TrimSpace(baseURL) == "" {
+		baseURL = "https://api.anthropic.com/v1/messages"
 	}
 	return &AnthropicClient{
 		apiKey:     key,
 		model:      model,
 		httpClient: &http.Client{Timeout: 60 * time.Second},
-		baseURL:    "https://api.anthropic.com/v1/messages",
+		baseURL:    baseURL,
 	}, nil
 }
 
@@ -131,4 +145,50 @@ func (c *AnthropicClient) SendMessage(ctx context.Context, system string, messag
 	modelResp.LatencyMS = latency
 
 	return &modelResp, nil
+}
+
+type ProviderConfig struct {
+	Provider string
+	BaseURL  string
+	Model    string
+}
+
+func resolveProviderConfig(providerFlag, baseURLFlag, modelFlag string) ProviderConfig {
+	provider := strings.TrimSpace(providerFlag)
+	if provider == "" {
+		provider = strings.TrimSpace(os.Getenv("BRIO_PROVIDER"))
+	}
+	if provider == "" {
+		provider = "anthropic"
+	}
+
+	baseURL := strings.TrimSpace(baseURLFlag)
+	if baseURL == "" {
+		baseURL = strings.TrimSpace(os.Getenv("BRIO_BASE_URL"))
+	}
+
+	model := strings.TrimSpace(modelFlag)
+	if model == "" {
+		model = strings.TrimSpace(os.Getenv("BRIO_MODEL"))
+	}
+	if model == "" && provider == "anthropic" {
+		model = "claude-haiku-5-5"
+	}
+
+	return ProviderConfig{
+		Provider: provider,
+		BaseURL:  baseURL,
+		Model:    model,
+	}
+}
+
+func CreateModelClient(cfg ProviderConfig) (ModelClient, error) {
+	switch cfg.Provider {
+	case "anthropic":
+		return NewAnthropicClientWithConfig(cfg.BaseURL, cfg.Model)
+	case "openai-compat":
+		return NewOpenAIClient(cfg.BaseURL, cfg.Model)
+	default:
+		return nil, fmt.Errorf("unknown provider: %s (supported: anthropic, openai-compat)", cfg.Provider)
+	}
 }

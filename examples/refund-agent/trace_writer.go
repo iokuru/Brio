@@ -62,12 +62,11 @@ type modelTraceStep struct {
 	CostUSD   float64 `json:"cost_usd"`
 }
 
-func (tw *TraceWriter) RecordModelTurn(tokensIn, tokensOut int, latencyMS int64) error {
+func (tw *TraceWriter) RecordModelTurnWithCost(tokensIn, tokensOut int, latencyMS int64, cost float64) error {
 	tw.mu.Lock()
 	defer tw.mu.Unlock()
 
 	tw.step++
-	cost := (float64(tokensIn)*PricePerMillionInputTokens + float64(tokensOut)*PricePerMillionOutputTokens) / 1_000_000.0
 
 	return tw.writeLine(modelTraceStep{
 		Step:      tw.step,
@@ -77,6 +76,11 @@ func (tw *TraceWriter) RecordModelTurn(tokensIn, tokensOut int, latencyMS int64)
 		LatencyMS: latencyMS,
 		CostUSD:   cost,
 	})
+}
+
+func (tw *TraceWriter) RecordModelTurn(tokensIn, tokensOut int, latencyMS int64) error {
+	cost := (float64(tokensIn)*PricePerMillionInputTokens + float64(tokensOut)*PricePerMillionOutputTokens) / 1_000_000.0
+	return tw.RecordModelTurnWithCost(tokensIn, tokensOut, latencyMS, cost)
 }
 
 type toolCallTraceStep struct {

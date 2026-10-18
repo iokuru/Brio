@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 type brioJSONResult struct {
@@ -35,6 +36,10 @@ type BenchConfig struct {
 	UseMock      bool
 	ScenariosDir string
 	BrioBin      string
+	Provider     string
+	BaseURL      string
+	Model        string
+	Pause        time.Duration
 }
 
 type VariantStats struct {
@@ -173,11 +178,13 @@ func RunBenchmark(ctx context.Context, cfg BenchConfig, stdout, stderr io.Writer
 		}
 	}
 
-	var realClient *AnthropicClient
+	var realClient ModelClient
 	if !cfg.UseMock {
-		realClient, err = NewAnthropicClient()
+		pCfg := resolveProviderConfig(cfg.Provider, cfg.BaseURL, cfg.Model)
+		var err error
+		realClient, err = CreateModelClient(pCfg)
 		if err != nil {
-			return fmt.Errorf("anthropic client: %w (use --mock for offline run)", err)
+			return fmt.Errorf("model client: %w (use --mock for offline run)", err)
 		}
 	}
 
