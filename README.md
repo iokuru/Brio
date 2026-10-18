@@ -99,22 +99,22 @@ FAIL limits          step 11: lookup_user called 4 times (max_repeat_calls: 3)
 
 In directory mode (`--traces`), every file is checked and reported on its own line without aborting on errors. The final summary displays the counts (`X passed, Y failed, Z errors`).
 
-## Benchmark
+## Benchmark setup
 
-The benchmark evaluates a customer-support refund agent comparing two prompt variants: `careful` (enforcing identity verification, strict refund formatting, and forbidden destructive actions) and `naive` (a casual assistant prompt without safety rules). The evaluation tests 8 scenarios across 5 runs per scenario against the `claude-haiku-5-5` model using Brio specifications as the automated grader (benchmarked October 2026). See [`examples/refund-agent`](examples/refund-agent) for the agent implementation, prompts, scenarios, and grading specifications.
+The benchmark compares two prompt variants for a customer-support refund agent: `careful` (enforcing identity verification, proper refund amount formatting, and avoiding destructive actions) and `naive` (a casual assistant prompt without safety rules). The suite evaluates 8 scenarios across 5 runs each, graded by Brio using the specifications in [`examples/refund-agent`](examples/refund-agent).
 
-To run the benchmark with live model calls:
+Runs target the Anthropic Messages API, using `claude-haiku-5-5` by default (configurable via `BRIO_MODEL`).
+
+To run the benchmark, set `ANTHROPIC_API_KEY` in your shell. The API key is held in memory for network requests and is never written to disk:
 
 ```bash
 export ANTHROPIC_API_KEY="your-api-key"
-go run ./examples/refund-agent bench --runs 5 --out examples/refund-agent/results
+cd examples/refund-agent
+go run . bench --runs 5
 ```
 
-To run offline using deterministic mock scripts:
+Results: run the commands above to populate this table.
 
-```bash
-go run ./examples/refund-agent bench --mock --runs 2
-```
-
-Results: run the command above to populate this table.
+| Metric | Careful | Naive |
+| ------ | ------- | ----- |
 
