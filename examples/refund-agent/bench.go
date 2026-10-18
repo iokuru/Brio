@@ -273,6 +273,14 @@ func RunBenchmark(ctx context.Context, cfg BenchConfig, stdout, stderr io.Writer
 						}
 					}
 				}
+
+				if cfg.Pause > 0 {
+					select {
+					case <-ctx.Done():
+						return ctx.Err()
+					case <-time.After(cfg.Pause):
+					}
+				}
 			}
 		}
 	}

@@ -63,3 +63,14 @@ func TestRefundAgentCLIUsage(t *testing.T) {
 		t.Errorf("expected code 2 for unknown cmd, got %d", code)
 	}
 }
+
+func TestBenchmarkPauseOption(t *testing.T) {
+	tmpDir := t.TempDir()
+	outDir := filepath.Join(tmpDir, "results")
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"bench", "--mock", "--runs", "1", "--out", outDir, "--pause", "1ms"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected code 0, got %d (stderr: %s)", code, stderr.String())
+	}
+}

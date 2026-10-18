@@ -42,7 +42,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 func printUsage(w io.Writer) {
 	fmt.Fprintf(w, `Usage:
   refund-agent run --prompt careful|naive --scenario 3 [--out trace.jsonl] [--provider anthropic|openai-compat] [--base-url url] [--model model] [--mock [script]]
-  refund-agent bench [--runs 5] [--out results] [--provider anthropic|openai-compat] [--base-url url] [--model model] [--mock]
+  refund-agent bench [--runs 5] [--out results] [--provider anthropic|openai-compat] [--base-url url] [--model model] [--pause duration] [--mock]
 `)
 }
 
@@ -179,6 +179,7 @@ func runBenchCmd(args []string, stdout, stderr io.Writer) int {
 	provider := fs.String("provider", "", "model provider: anthropic or openai-compat (env: BRIO_PROVIDER)")
 	baseURL := fs.String("base-url", "", "custom API base URL (env: BRIO_BASE_URL)")
 	modelName := fs.String("model", "", "model name (env: BRIO_MODEL)")
+	pause := fs.Duration("pause", 0, "pause duration between scenario runs")
 
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -193,6 +194,7 @@ func runBenchCmd(args []string, stdout, stderr io.Writer) int {
 		Provider:     *provider,
 		BaseURL:      *baseURL,
 		Model:        *modelName,
+		Pause:        *pause,
 	}
 
 	if err := RunBenchmark(context.Background(), benchCfg, stdout, stderr); err != nil {

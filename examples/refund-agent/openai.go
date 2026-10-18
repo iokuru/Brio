@@ -81,14 +81,15 @@ type openAIResponse struct {
 }
 
 type OpenAIClient struct {
-	apiKey     string
-	model      string
-	baseURL    string
-	endpoint   string
-	httpClient *http.Client
-	hasPricing bool
-	priceIn    float64
-	priceOut   float64
+	apiKey         string
+	model          string
+	baseURL        string
+	endpoint       string
+	httpClient     *http.Client
+	hasPricing     bool
+	priceIn        float64
+	priceOut       float64
+	RetryBaseDelay time.Duration
 }
 
 func NewOpenAIClient(baseURL, model string) (*OpenAIClient, error) {
@@ -148,6 +149,27 @@ func NewOpenAIClientWithHTTP(baseURL, model string, client *http.Client) (*OpenA
 		priceIn:    priceIn,
 		priceOut:   priceOut,
 	}, nil
+}
+
+func parseRetryAfter(header string) time.Duration {
+	header = strings.TrimSpace(header)
+	if header == "" {
+		return 0
+	}
+	if sec, err := strconv.Atoi(header); err == nil && sec >= 0 {
+		return time.Duration(sec) * time.Second
+	}
+	if secFloat, err := strconv.ParseFloat(header, 64); err == nil && secFloat >= 0 {
+		return time.Duration(secFloat * float64(time.Second))
+	}
+	if t, err := http.ParseTime(header); err == nil {
+		diff := time.Until(t)
+		if diff > 0 {
+			return diff
+		}
+		return 0
+	}
+	return 0
 }
 
 func redactKey(text, key string) string {
@@ -239,25 +261,53 @@ func (c *OpenAIClient) SendMessage(ctx context.Context, system string, messages 
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+	maxRetries := 3
+	baseDelay := c.RetryBaseDelay
+	if baseDelay <= 0 {
+		baseDelay = 500 * time.Millisecond
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	req.Header.Set("Content-Type", "application/json")
+	var resp *http.Response
+	var respBytes []byte
+	var latency int64
 
-	start := time.Now()
-	resp, err := c.httpClient.Do(req)
-	latency := time.Since(start).Milliseconds()
-	if err != nil {
-		return nil, fmt.Errorf("http request: %s", redactKey(err.Error(), c.apiKey))
-	}
-	defer resp.Body.Close()
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return nil, fmt.Errorf("create request: %w", err)
+		}
 
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response body: %w", err)
+		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+		req.Header.Set("Content-Type", "application/json")
+
+		start := time.Now()
+		resp, err = c.httpClient.Do(req)
+		latency = time.Since(start).Milliseconds()
+		if err != nil {
+			return nil, fmt.Errorf("http request: %s", redactKey(err.Error(), c.apiKey))
+		}
+
+		respBytes, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("read response body: %w", err)
+		}
+
+		// Retry on 429 and 5xx if retries remaining
+		if (resp.StatusCode == http.StatusTooManyRequests || (resp.StatusCode >= 500 && resp.StatusCode <= 599)) && attempt < maxRetries {
+			delay := parseRetryAfter(resp.Header.Get("Retry-After"))
+			if delay <= 0 {
+				delay = baseDelay * time.Duration(1<<attempt)
+			}
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(delay):
+			}
+			continue
+		}
+
+		break
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
