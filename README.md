@@ -113,8 +113,39 @@ cd examples/refund-agent
 go run . bench --runs 5
 ```
 
+### Hosted OpenAI-compatible providers
+
+The benchmark can also run against any OpenAI-compatible endpoint using `--provider openai-compat` (or `BRIO_PROVIDER=openai-compat`) and `BRIO_API_KEY`. Like Anthropic keys, `BRIO_API_KEY` is held in memory only, never written to disk, trace files, or logs, and redacted from error messages. Free-tier endpoints may benefit from `--pause <duration>` to respect rate limits.
+
+#### Groq
+
+```bash
+export BRIO_API_KEY="your-groq-key"
+cd examples/refund-agent
+go run . bench --provider openai-compat \
+  --base-url https://api.groq.com/openai/v1 \
+  --model llama-3.3-70b-versatile \
+  --pause 2s \
+  --runs 5
+```
+
+#### Gemini
+
+```bash
+export BRIO_API_KEY="your-gemini-key"
+cd examples/refund-agent
+go run . bench --provider openai-compat \
+  --base-url https://generativelanguage.googleapis.com/v1beta/openai/ \
+  --model gemini-1.5-flash \
+  --pause 2s \
+  --runs 5
+```
+
+Base URLs and model names are examples; check provider documentation for current endpoints and models.
+
 Results: run the commands above to populate this table.
 
 | Metric | Careful | Naive |
 | ------ | ------- | ----- |
+
 
