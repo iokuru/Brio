@@ -30,10 +30,10 @@ type openAIToolCall struct {
 }
 
 type openAIMessage struct {
-	Role       string           `json:"role"`
-	Content    any              `json:"content"`
-	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string           `json:"tool_call_id,omitempty"`
+	Role       string            `json:"role"`
+	Content    any               `json:"content"`
+	ToolCalls  []json.RawMessage `json:"tool_calls,omitempty"`
+	ToolCallID string            `json:"tool_call_id,omitempty"`
 }
 
 type openAIFunctionDefinition struct {
@@ -60,9 +60,9 @@ type openAIUsage struct {
 }
 
 type openAIChoiceMessage struct {
-	Role      string           `json:"role"`
-	Content   *string          `json:"content"`
-	ToolCalls []openAIToolCall `json:"tool_calls,omitempty"`
+	Role      string            `json:"role"`
+	Content   *string           `json:"content"`
+	ToolCalls []json.RawMessage `json:"tool_calls,omitempty"`
 }
 
 type openAIChoice struct {
@@ -199,20 +199,26 @@ func (c *OpenAIClient) SendMessage(ctx context.Context, system string, messages 
 		case []ContentBlock:
 			if msg.Role == "assistant" {
 				var textParts []string
-				var toolCalls []openAIToolCall
+				var toolCalls []json.RawMessage
 				for _, b := range content {
 					if b.Type == "text" && b.Text != "" {
 						textParts = append(textParts, b.Text)
 					} else if b.Type == "tool_use" {
-						argsBytes, _ := json.Marshal(b.Input)
-						toolCalls = append(toolCalls, openAIToolCall{
-							ID:   b.ID,
-							Type: "function",
-							Function: openAIToolCallFunction{
-								Name:      b.Name,
-								Arguments: string(argsBytes),
-							},
-						})
+						if len(b.RawJSON) > 0 {
+							toolCalls = append(toolCalls, b.RawJSON)
+						} else {
+							argsBytes, _ := json.Marshal(b.Input)
+							tc := openAIToolCall{
+								ID:   b.ID,
+								Type: "function",
+								Function: openAIToolCallFunction{
+									Name:      b.Name,
+									Arguments: string(argsBytes),
+								},
+							}
+							raw, _ := json.Marshal(tc)
+							toolCalls = append(toolCalls, raw)
+						}
 					}
 				}
 				asstMsg := openAIMessage{
@@ -336,7 +342,10 @@ func (c *OpenAIClient) SendMessage(ctx context.Context, system string, messages 
 		})
 	}
 
-	for _, tc := range choice.Message.ToolCalls {
+	for _, rawTC := range choice.Message.ToolCalls {
+		var tc openAIToolCall
+		if err := json.Unmarshal(rawTC, &tc); err != nil {
+		}
 		var args map[string]any
 		var argErr string
 		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
@@ -348,6 +357,7 @@ func (c *OpenAIClient) SendMessage(ctx context.Context, system string, messages 
 			Name:     tc.Function.Name,
 			Input:    args,
 			ArgError: argErr,
+			RawJSON:  bytes.Clone(rawTC),
 		})
 	}
 

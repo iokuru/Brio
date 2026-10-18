@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,6 +13,21 @@ import (
 	"testing"
 	"time"
 )
+
+func rawToolCall(id, name, args string) json.RawMessage {
+	b, err := json.Marshal(openAIToolCall{
+		ID:   id,
+		Type: "function",
+		Function: openAIToolCallFunction{
+			Name:      name,
+			Arguments: args,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
 
 func TestOpenAIClientEdgeCases(t *testing.T) {
 	tests := []struct {
@@ -39,15 +56,8 @@ func TestOpenAIClientEdgeCases(t *testing.T) {
 							Index: 0,
 							Message: openAIChoiceMessage{
 								Role: "assistant",
-								ToolCalls: []openAIToolCall{
-									{
-										ID:   "call_1",
-										Type: "function",
-										Function: openAIToolCallFunction{
-											Name:      "lookup_user",
-											Arguments: `{"id":"u_42"}`,
-										},
-									},
+								ToolCalls: []json.RawMessage{
+									rawToolCall("call_1", "lookup_user", `{"id":"u_42"}`),
 								},
 							},
 							FinishReason: "tool_calls",
@@ -140,15 +150,8 @@ func TestOpenAIClientEdgeCases(t *testing.T) {
 							Index: 0,
 							Message: openAIChoiceMessage{
 								Role: "assistant",
-								ToolCalls: []openAIToolCall{
-									{
-										ID:   "call_bad",
-										Type: "function",
-										Function: openAIToolCallFunction{
-											Name:      "lookup_user",
-											Arguments: `{"id": unquoted}`,
-										},
-									},
+								ToolCalls: []json.RawMessage{
+									rawToolCall("call_bad", "lookup_user", `{"id": unquoted}`),
 								},
 							},
 							FinishReason: "tool_calls",
@@ -356,15 +359,8 @@ func TestOpenAIRunAgentMalformedArgsReturnsToolError(t *testing.T) {
 						Index: 0,
 						Message: openAIChoiceMessage{
 							Role: "assistant",
-							ToolCalls: []openAIToolCall{
-								{
-									ID:   "call_malformed",
-									Type: "function",
-									Function: openAIToolCallFunction{
-										Name:      "lookup_user",
-										Arguments: `{"id": not_json}`,
-									},
-								},
+							ToolCalls: []json.RawMessage{
+								rawToolCall("call_malformed", "lookup_user", `{"id": not_json}`),
 							},
 						},
 						FinishReason: "tool_calls",
@@ -421,5 +417,230 @@ func TestOpenAIRunAgentMalformedArgsReturnsToolError(t *testing.T) {
 	err = RunAgent(context.Background(), cfg, "Hello")
 	if err != nil {
 		t.Fatalf("RunAgent failed: %v", err)
+	}
+}
+
+func TestOpenAIReplayToolCallsWithExtraFields(t *testing.T) {
+	t.Setenv("BRIO_API_KEY", "test-key-gemini")
+
+	const thoughtSig = "sig_gemini_thought_12345"
+	var turn atomic.Int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		currentTurn := turn.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+
+		switch currentTurn {
+		case 1:
+			respJSON := `{
+				"id": "gemini-resp-1",
+				"choices": [{
+					"index": 0,
+					"message": {
+						"role": "assistant",
+						"tool_calls": [{
+							"id": "call_gemini_1",
+							"type": "function",
+							"function": {
+								"name": "lookup_user",
+								"arguments": "{\"id\":\"u_42\"}"
+							},
+							"extra_content": {
+								"google": {
+									"thought_signature": "` + thoughtSig + `"
+								}
+							}
+						}]
+					},
+					"finish_reason": "tool_calls"
+				}],
+				"usage": {"prompt_tokens": 100, "completion_tokens": 20}
+			}`
+			_, _ = w.Write([]byte(respJSON))
+
+		case 2:
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Errorf("read request body: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			var req struct {
+				Messages []struct {
+					Role      string            `json:"role"`
+					Content   any               `json:"content"`
+					ToolCalls []json.RawMessage `json:"tool_calls"`
+				} `json:"messages"`
+			}
+			if err := json.Unmarshal(body, &req); err != nil {
+				t.Errorf("unmarshal request: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			var asstTC json.RawMessage
+			for _, m := range req.Messages {
+				if m.Role == "assistant" && len(m.ToolCalls) > 0 {
+					asstTC = m.ToolCalls[0]
+					break
+				}
+			}
+			if len(asstTC) == 0 {
+				t.Fatalf("turn 2 request missing assistant tool call")
+			}
+
+			var parsedTC struct {
+				ID       string `json:"id"`
+				Type     string `json:"type"`
+				Function struct {
+					Name      string `json:"name"`
+					Arguments string `json:"arguments"`
+				} `json:"function"`
+				ExtraContent struct {
+					Google struct {
+						ThoughtSignature string `json:"thought_signature"`
+					} `json:"google"`
+				} `json:"extra_content"`
+			}
+			if err := json.Unmarshal(asstTC, &parsedTC); err != nil {
+				t.Fatalf("turn 2 tool call unmarshal: %v", err)
+			}
+
+			if parsedTC.ID != "call_gemini_1" {
+				t.Errorf("expected tool call ID call_gemini_1, got %s", parsedTC.ID)
+			}
+			if parsedTC.ExtraContent.Google.ThoughtSignature != thoughtSig {
+				t.Errorf("expected thought_signature %q, got %q", thoughtSig, parsedTC.ExtraContent.Google.ThoughtSignature)
+			}
+
+			respJSON := `{
+				"id": "gemini-resp-2",
+				"choices": [{
+					"index": 0,
+					"message": {
+						"role": "assistant",
+						"tool_calls": [{
+							"id": "call_normal_2",
+							"type": "function",
+							"function": {
+								"name": "confirm_user",
+								"arguments": "{\"id\":\"u_42\"}"
+							}
+						}]
+					},
+					"finish_reason": "tool_calls"
+				}],
+				"usage": {"prompt_tokens": 150, "completion_tokens": 25}
+			}`
+			_, _ = w.Write([]byte(respJSON))
+
+		case 3:
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Errorf("read request body: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			var req struct {
+				Messages []struct {
+					Role      string            `json:"role"`
+					Content   any               `json:"content"`
+					ToolCalls []json.RawMessage `json:"tool_calls"`
+				} `json:"messages"`
+			}
+			if err := json.Unmarshal(body, &req); err != nil {
+				t.Errorf("unmarshal request: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			var normalTC json.RawMessage
+			for _, m := range req.Messages {
+				if m.Role == "assistant" && len(m.ToolCalls) > 0 {
+					var check struct {
+						ID string `json:"id"`
+					}
+					_ = json.Unmarshal(m.ToolCalls[0], &check)
+					if check.ID == "call_normal_2" {
+						normalTC = m.ToolCalls[0]
+						break
+					}
+				}
+			}
+			if len(normalTC) == 0 {
+				t.Fatalf("turn 3 request missing assistant tool call for call_normal_2")
+			}
+
+			var parsedNormal map[string]any
+			if err := json.Unmarshal(normalTC, &parsedNormal); err != nil {
+				t.Fatalf("turn 3 normal tool call unmarshal: %v", err)
+			}
+			if parsedNormal["id"] != "call_normal_2" {
+				t.Errorf("expected id call_normal_2, got %v", parsedNormal["id"])
+			}
+			if _, ok := parsedNormal["extra_content"]; ok {
+				t.Errorf("turn 3 tool call unexpectedly has extra_content: %v", parsedNormal)
+			}
+
+			respJSON := `{
+				"id": "gemini-resp-3",
+				"choices": [{
+					"index": 0,
+					"message": {
+						"role": "assistant",
+						"content": "User confirmed."
+					},
+					"finish_reason": "stop"
+				}],
+				"usage": {"prompt_tokens": 200, "completion_tokens": 10}
+			}`
+			_, _ = w.Write([]byte(respJSON))
+
+		default:
+			t.Errorf("unexpected turn %d", currentTurn)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+
+	client, err := NewOpenAIClient(server.URL, "test-gemini")
+	if err != nil {
+		t.Fatalf("create client: %v", err)
+	}
+
+	var traceBuf bytes.Buffer
+	tw := NewTraceWriter(&traceBuf)
+
+	store := NewStore([]User{{ID: "u_42", Name: "Alice", Status: "active", Balance: "$100"}})
+	cfg := AgentConfig{
+		SystemPrompt: "test system",
+		Store:        store,
+		Model:        client,
+		TraceWriter:  tw,
+	}
+
+	err = RunAgent(context.Background(), cfg, "Check user")
+	if err != nil {
+		t.Fatalf("RunAgent failed: %v", err)
+	}
+
+	if turn.Load() != 3 {
+		t.Errorf("expected 3 turns, got %d", turn.Load())
+	}
+
+	traceStr := traceBuf.String()
+	if traceStr == "" {
+		t.Fatalf("expected trace output, got empty")
+	}
+	if strings.Contains(traceStr, "thought_signature") {
+		t.Errorf("trace contains thought_signature: %s", traceStr)
+	}
+	if strings.Contains(traceStr, "extra_content") {
+		t.Errorf("trace contains extra_content: %s", traceStr)
+	}
+	if strings.Contains(traceStr, thoughtSig) {
+		t.Errorf("trace contains raw thought signature: %s", traceStr)
 	}
 }
