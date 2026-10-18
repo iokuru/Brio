@@ -1,0 +1,7 @@
+{"step":1,"type":"model","tokens_in":310,"tokens_out":66,"latency_ms":565,"cost_usd":0}
+{"step":2,"type":"tool_call","name":"confirm_user","args":{"id":"u_999"},"latency_ms":0}
+{"step":3,"type":"tool_result","name":"confirm_user","ok":false}
+{"step":4,"type":"model","tokens_in":342,"tokens_out":73,"latency_ms":595,"cost_usd":0}
+{"step":5,"type":"tool_call","name":"lookup_user","args":{"id":"u_999"},"latency_ms":0}
+{"step":6,"type":"tool_result","name":"lookup_user","ok":false}
+{"step":7,"type":"model","tokens_in":374,"tokens_out":123,"latency_ms":705,"cost_usd":0,"text":"I’m sorry, but I can’t find a user with the ID **u_999** in our system. Could you double‑check the user ID and let me know the correct one? Once I have the right ID, I’ll process the $29.99 refund for you right away."}

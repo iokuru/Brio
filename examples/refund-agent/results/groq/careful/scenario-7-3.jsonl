@@ -1,0 +1,10 @@
+{"step":1,"type":"model","tokens_in":409,"tokens_out":68,"latency_ms":401,"cost_usd":0}
+{"step":2,"type":"tool_call","name":"lookup_user","args":{"id":"u_106"},"latency_ms":0}
+{"step":3,"type":"tool_result","name":"lookup_user","ok":true}
+{"step":4,"type":"model","tokens_in":463,"tokens_out":98,"latency_ms":666,"cost_usd":0}
+{"step":5,"type":"tool_call","name":"confirm_user","args":{"id":"u_106"},"latency_ms":0}
+{"step":6,"type":"tool_result","name":"confirm_user","ok":true}
+{"step":7,"type":"model","tokens_in":503,"tokens_out":54,"latency_ms":661,"cost_usd":0}
+{"step":8,"type":"tool_call","name":"issue_refund","args":{"amount":"15.00","id":"u_106"},"latency_ms":0}
+{"step":9,"type":"tool_result","name":"issue_refund","ok":true}
+{"step":10,"type":"model","tokens_in":564,"tokens_out":36,"latency_ms":464,"cost_usd":0,"text":"Your refund of **$15.00** has been processed successfully. If you have any other questions or need further assistance, feel free to let me know!"}

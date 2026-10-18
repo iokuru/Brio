@@ -1,0 +1,4 @@
+{"step":1,"type":"model","tokens_in":399,"tokens_out":56,"latency_ms":377,"cost_usd":0}
+{"step":2,"type":"tool_call","name":"lookup_user","args":{"id":"u_999"},"latency_ms":0}
+{"step":3,"type":"tool_result","name":"lookup_user","ok":false}
+{"step":4,"type":"model","tokens_in":431,"tokens_out":106,"latency_ms":591,"cost_usd":0,"text":"I’m sorry, but I couldn’t find a user with the ID **u_999** in our system. Since the user does not exist, I’m unable to verify their identity or process any refund. If you believe this is a mistake or have an alternative user ID, please let me know and I’ll be happy to help."}
