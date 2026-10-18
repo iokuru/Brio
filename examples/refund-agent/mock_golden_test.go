@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/iokuru/brio/internal/trace"
@@ -85,6 +86,18 @@ func TestMockScriptsGolden(t *testing.T) {
 			}
 			if len(parsedTrace.Steps) == 0 {
 				t.Fatalf("parsed trace has 0 steps")
+			}
+
+			lines := strings.Split(strings.TrimSpace(string(traceBytes)), "\n")
+			lastLine := lines[len(lines)-1]
+			var lastRaw map[string]any
+			if err := json.Unmarshal([]byte(lastLine), &lastRaw); err != nil {
+				t.Fatalf("unmarshal last line: %v", err)
+			}
+			if lastRaw["type"] == "model" {
+				if _, ok := lastRaw["text"]; !ok {
+					t.Errorf("expected text field in final model step for script %s: %s", tc.script, lastLine)
+				}
 			}
 
 			tracePath := filepath.Join(tmpDir, tc.script+".jsonl")

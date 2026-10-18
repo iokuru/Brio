@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,16 @@ func RunAgent(ctx context.Context, cfg AgentConfig, userMessage string) error {
 			return fmt.Errorf("model turn %d: %w", turn+1, err)
 		}
 
+		var toolUses []ContentBlock
+		var textParts []string
+		for _, b := range resp.Content {
+			if b.Type == "tool_use" {
+				toolUses = append(toolUses, b)
+			} else if b.Type == "text" && b.Text != "" {
+				textParts = append(textParts, b.Text)
+			}
+		}
+
 		if cfg.TraceWriter != nil {
 			tokensIn := resp.Usage.InputTokens
 			tokensOut := resp.Usage.OutputTokens
@@ -40,21 +51,22 @@ func RunAgent(ctx context.Context, cfg AgentConfig, userMessage string) error {
 				tokensIn = 100
 				tokensOut = 50
 			}
+			var replyText string
+			if len(toolUses) == 0 && len(textParts) > 0 {
+				replyText = strings.Join(textParts, "\n")
+				runes := []rune(replyText)
+				if len(runes) > 400 {
+					replyText = string(runes[:400])
+				}
+			}
 			var recordErr error
 			if resp.CostUSD != nil {
-				recordErr = cfg.TraceWriter.RecordModelTurnWithCost(tokensIn, tokensOut, resp.LatencyMS, *resp.CostUSD)
+				recordErr = cfg.TraceWriter.RecordModelTurnWithCostAndText(tokensIn, tokensOut, resp.LatencyMS, *resp.CostUSD, replyText)
 			} else {
-				recordErr = cfg.TraceWriter.RecordModelTurn(tokensIn, tokensOut, resp.LatencyMS)
+				recordErr = cfg.TraceWriter.RecordModelTurnWithText(tokensIn, tokensOut, resp.LatencyMS, replyText)
 			}
 			if recordErr != nil {
 				return recordErr
-			}
-		}
-
-		var toolUses []ContentBlock
-		for _, b := range resp.Content {
-			if b.Type == "tool_use" {
-				toolUses = append(toolUses, b)
 			}
 		}
 

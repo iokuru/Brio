@@ -38,6 +38,20 @@ func TestParseValidTrace(t *testing.T) {
 	}
 }
 
+func TestParseModelStepWithText(t *testing.T) {
+	input := `{"step":1,"type":"model","tokens_in":100,"tokens_out":20,"latency_ms":150,"text":"Refund has been processed."}` + "\n"
+	tr, err := Parse(strings.NewReader(input), "trace_text.jsonl")
+	if err != nil {
+		t.Fatalf("unexpected error parsing trace with text field: %v", err)
+	}
+	if len(tr.Steps) != 1 {
+		t.Fatalf("expected 1 step, got %d", len(tr.Steps))
+	}
+	if tr.Steps[0].Step != 1 || tr.Steps[0].Type != "model" {
+		t.Errorf("unexpected step parsed: %+v", tr.Steps[0])
+	}
+}
+
 func TestParseErrors(t *testing.T) {
 	tests := []struct {
 		name      string

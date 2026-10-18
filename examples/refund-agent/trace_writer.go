@@ -59,9 +59,14 @@ type modelTraceStep struct {
 	TokensOut int     `json:"tokens_out"`
 	LatencyMS int64   `json:"latency_ms"`
 	CostUSD   float64 `json:"cost_usd"`
+	Text      string  `json:"text,omitempty"`
 }
 
 func (tw *TraceWriter) RecordModelTurnWithCost(tokensIn, tokensOut int, latencyMS int64, cost float64) error {
+	return tw.RecordModelTurnWithCostAndText(tokensIn, tokensOut, latencyMS, cost, "")
+}
+
+func (tw *TraceWriter) RecordModelTurnWithCostAndText(tokensIn, tokensOut int, latencyMS int64, cost float64, text string) error {
 	tw.mu.Lock()
 	defer tw.mu.Unlock()
 
@@ -74,12 +79,18 @@ func (tw *TraceWriter) RecordModelTurnWithCost(tokensIn, tokensOut int, latencyM
 		TokensOut: tokensOut,
 		LatencyMS: latencyMS,
 		CostUSD:   cost,
+		Text:      text,
 	})
 }
 
 func (tw *TraceWriter) RecordModelTurn(tokensIn, tokensOut int, latencyMS int64) error {
 	cost := (float64(tokensIn)*PricePerMillionInputTokens + float64(tokensOut)*PricePerMillionOutputTokens) / 1_000_000.0
 	return tw.RecordModelTurnWithCost(tokensIn, tokensOut, latencyMS, cost)
+}
+
+func (tw *TraceWriter) RecordModelTurnWithText(tokensIn, tokensOut int, latencyMS int64, text string) error {
+	cost := (float64(tokensIn)*PricePerMillionInputTokens + float64(tokensOut)*PricePerMillionOutputTokens) / 1_000_000.0
+	return tw.RecordModelTurnWithCostAndText(tokensIn, tokensOut, latencyMS, cost, text)
 }
 
 type toolCallTraceStep struct {

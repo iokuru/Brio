@@ -95,6 +95,54 @@ func TestAgentLoopNormalCompletion(t *testing.T) {
 			t.Errorf("line %d: expected step %v, got %v", i+1, expectedStep, raw["step"])
 		}
 	}
+
+	var firstStep map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &firstStep); err != nil {
+		t.Fatalf("unmarshal step 1: %v", err)
+	}
+	if _, ok := firstStep["text"]; ok {
+		t.Errorf("expected no text field in step with tool calls, got: %v", firstStep["text"])
+	}
+
+	var lastStep map[string]any
+	if err := json.Unmarshal([]byte(lines[3]), &lastStep); err != nil {
+		t.Fatalf("unmarshal step 4: %v", err)
+	}
+	if lastStep["text"] != "User Alice looked up successfully." {
+		t.Errorf("expected final model text in trace, got: %v", lastStep["text"])
+	}
+}
+
+func TestAgentTraceTextTrimmedTo400(t *testing.T) {
+	longText := strings.Repeat("A", 500)
+	mock := &sequenceMockClient{
+		responses: []*ModelResponse{
+			{
+				ID:         "msg_long",
+				Role:       "assistant",
+				Content:    []ContentBlock{{Type: "text", Text: longText}},
+				StopReason: "end_turn",
+			},
+		},
+	}
+	var traceBuf bytes.Buffer
+	tw := NewTraceWriter(&traceBuf)
+	cfg := AgentConfig{
+		Store:       sampleTestStore(),
+		Model:       mock,
+		TraceWriter: tw,
+	}
+	if err := RunAgent(context.Background(), cfg, "hi"); err != nil {
+		t.Fatalf("RunAgent: %v", err)
+	}
+	var step map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(traceBuf.Bytes()), &step); err != nil {
+		t.Fatalf("unmarshal trace step: %v", err)
+	}
+	textVal, ok := step["text"].(string)
+	if !ok || len(textVal) != 400 {
+		t.Errorf("expected text trimmed to 400 chars, got length %d: %q", len(textVal), textVal)
+	}
 }
 
 func TestAgentLoopTurnCapReached(t *testing.T) {
