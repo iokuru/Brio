@@ -146,7 +146,18 @@ go run . bench --runs 5
 
 ### Hosted OpenAI-compatible providers
 
-The benchmark can also run against any OpenAI-compatible endpoint using `--provider openai-compat` (or `BRIO_PROVIDER=openai-compat`) and `BRIO_API_KEY`. Like Anthropic keys, `BRIO_API_KEY` is held in memory only, never written to disk, trace files, or logs, and redacted from error messages. Free-tier endpoints may benefit from `--pause <duration>` to respect rate limits.
+The benchmark can run against any OpenAI-compatible endpoint using `--provider openai-compat` (or `BRIO_PROVIDER=openai-compat`) and `BRIO_API_KEY`. Like Anthropic keys, `BRIO_API_KEY` is held in memory only, never written to disk, trace files, or logs, and redacted from error messages. Free-tier endpoints may benefit from `--pause <duration>` to respect rate limits. Token pricing can optionally be tracked with `BRIO_PRICE_IN` and `BRIO_PRICE_OUT` (USD per million tokens).
+
+#### OpenAI
+
+```bash
+export BRIO_API_KEY="your-openai-key"
+cd examples/refund-agent
+go run . bench --provider openai-compat \
+  --base-url https://api.openai.com/v1 \
+  --model gpt-4o-mini \
+  --runs 5
+```
 
 #### Groq
 
@@ -169,6 +180,61 @@ go run . bench --provider openai-compat \
   --base-url https://generativelanguage.googleapis.com/v1beta/openai/ \
   --model gemini-1.5-flash \
   --pause 2s \
+  --runs 5
+```
+
+#### OpenRouter
+
+```bash
+export BRIO_API_KEY="your-openrouter-key"
+cd examples/refund-agent
+go run . bench --provider openai-compat \
+  --base-url https://openrouter.ai/api/v1 \
+  --model meta-llama/llama-3.3-70b-instruct \
+  --runs 5
+```
+
+#### Mistral AI
+
+```bash
+export BRIO_API_KEY="your-mistral-key"
+cd examples/refund-agent
+go run . bench --provider openai-compat \
+  --base-url https://api.mistral.ai/v1 \
+  --model mistral-small-latest \
+  --runs 5
+```
+
+#### DeepSeek
+
+```bash
+export BRIO_API_KEY="your-deepseek-key"
+cd examples/refund-agent
+go run . bench --provider openai-compat \
+  --base-url https://api.deepseek.com/v1 \
+  --model deepseek-chat \
+  --runs 5
+```
+
+#### Together AI
+
+```bash
+export BRIO_API_KEY="your-together-key"
+cd examples/refund-agent
+go run . bench --provider openai-compat \
+  --base-url https://api.together.xyz/v1 \
+  --model meta-llama/Llama-3.3-70B-Instruct-Turbo \
+  --runs 5
+```
+
+#### Local endpoints (Ollama / vLLM / LM Studio)
+
+```bash
+export BRIO_API_KEY="local"
+cd examples/refund-agent
+go run . bench --provider openai-compat \
+  --base-url http://localhost:11434/v1 \
+  --model llama3.2 \
   --runs 5
 ```
 
