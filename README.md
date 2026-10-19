@@ -134,19 +134,23 @@ In scenario 5, the careful agent stopped to ask for clarification rather than is
 
 ### Benchmark setup
 
-Runs target the Anthropic Messages API, using `claude-haiku-5-5` by default (configurable via `BRIO_MODEL`).
+The benchmark supports Anthropic directly as well as any provider exposing an OpenAI-compatible `/chat/completions` endpoint. API keys are held in memory only for HTTP requests, never written to disk, trace files, or logs, and redacted from error output. Free-tier endpoints may benefit from `--pause <duration>` to respect rate limits. Token pricing can optionally be tracked with `BRIO_PRICE_IN` and `BRIO_PRICE_OUT` (USD per million tokens).
 
-To run the benchmark, set `ANTHROPIC_API_KEY` in your shell. The API key is held in memory for network requests and is never written to disk:
+#### Anthropic
 
 ```bash
-export ANTHROPIC_API_KEY="your-api-key"
+export ANTHROPIC_API_KEY="your-anthropic-key"
 cd examples/refund-agent
-go run . bench --runs 5
+go run . bench --provider anthropic \
+  --model claude-haiku-5-5 \
+  --runs 5
 ```
+
+Default model is `claude-haiku-5-5`. Other models (e.g. `claude-3-5-haiku-20241022`, `claude-3-5-sonnet-20241022`) can be passed via `--model` or `BRIO_MODEL`.
 
 ### Hosted OpenAI-compatible providers
 
-The benchmark can run against any OpenAI-compatible endpoint using `--provider openai-compat` (or `BRIO_PROVIDER=openai-compat`) and `BRIO_API_KEY`. Like Anthropic keys, `BRIO_API_KEY` is held in memory only, never written to disk, trace files, or logs, and redacted from error messages. Free-tier endpoints may benefit from `--pause <duration>` to respect rate limits. Token pricing can optionally be tracked with `BRIO_PRICE_IN` and `BRIO_PRICE_OUT` (USD per million tokens).
+The benchmark can run against any OpenAI-compatible endpoint using `--provider openai-compat` (or `BRIO_PROVIDER=openai-compat`) and `BRIO_API_KEY`.
 
 #### OpenAI
 
@@ -236,6 +240,13 @@ go run . bench --provider openai-compat \
   --base-url http://localhost:11434/v1 \
   --model llama3.2 \
   --runs 5
+```
+
+#### Offline mock (no API key required)
+
+```bash
+cd examples/refund-agent
+go run . bench --mock --runs 5
 ```
 
 Base URLs and model names are examples; check provider documentation for current endpoints and models.
