@@ -134,7 +134,7 @@ In scenario 5, the careful agent stopped to ask for clarification rather than is
 
 ### Benchmark setup
 
-The benchmark supports Anthropic directly as well as any provider exposing an OpenAI-compatible `/chat/completions` endpoint. API keys are held in memory only for HTTP requests, never written to disk, trace files, or logs, and redacted from error output. Free-tier endpoints may benefit from `--pause <duration>` to respect rate limits. Token pricing can optionally be tracked with `BRIO_PRICE_IN` and `BRIO_PRICE_OUT` (USD per million tokens).
+The benchmark supports Anthropic directly as well as any provider exposing an OpenAI-compatible `/chat/completions` endpoint (using `--provider openai-compat` and `BRIO_API_KEY`). API keys are held in memory only for HTTP requests, never written to disk, trace files, or logs, and redacted from error output. Free-tier endpoints may benefit from `--pause <duration>` to respect rate limits. Token pricing can optionally be tracked with `BRIO_PRICE_IN` and `BRIO_PRICE_OUT` (USD per million tokens).
 
 #### Anthropic
 
@@ -147,10 +147,6 @@ go run . bench --provider anthropic \
 ```
 
 Default model is `claude-haiku-5-5`. Other models (e.g. `claude-3-5-haiku-20241022`, `claude-3-5-sonnet-20241022`) can be passed via `--model` or `BRIO_MODEL`.
-
-### Hosted OpenAI-compatible providers
-
-The benchmark can run against any OpenAI-compatible endpoint using `--provider openai-compat` (or `BRIO_PROVIDER=openai-compat`) and `BRIO_API_KEY`.
 
 #### OpenAI
 
@@ -198,17 +194,6 @@ go run . bench --provider openai-compat \
   --runs 5
 ```
 
-#### Mistral AI
-
-```bash
-export BRIO_API_KEY="your-mistral-key"
-cd examples/refund-agent
-go run . bench --provider openai-compat \
-  --base-url https://api.mistral.ai/v1 \
-  --model mistral-small-latest \
-  --runs 5
-```
-
 #### DeepSeek
 
 ```bash
@@ -217,17 +202,6 @@ cd examples/refund-agent
 go run . bench --provider openai-compat \
   --base-url https://api.deepseek.com/v1 \
   --model deepseek-chat \
-  --runs 5
-```
-
-#### Together AI
-
-```bash
-export BRIO_API_KEY="your-together-key"
-cd examples/refund-agent
-go run . bench --provider openai-compat \
-  --base-url https://api.together.xyz/v1 \
-  --model meta-llama/Llama-3.3-70B-Instruct-Turbo \
   --runs 5
 ```
 
