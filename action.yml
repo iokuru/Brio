@@ -26,13 +26,17 @@ runs:
   steps:
     - name: Download Brio binary
       shell: bash
+      env:
+        RUNNER_OS: ${{ runner.os }}
+        RUNNER_ARCH: ${{ runner.arch }}
+        INPUT_VERSION: ${{ inputs.version }}
       run: |
-        OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+        OS=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
         if [ "$OS" = "macos" ]; then
           OS="darwin"
         fi
 
-        ARCH=$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')
+        ARCH=$(echo "$RUNNER_ARCH" | tr '[:upper:]' '[:lower:]')
         if [ "$ARCH" = "x64" ]; then
           ARCH="amd64"
         fi
@@ -43,7 +47,7 @@ runs:
         fi
 
         BIN_NAME="brio-${OS}-${ARCH}${EXT}"
-        VER="${{ inputs.version }}"
+        VER="$INPUT_VERSION"
 
         if [ "$VER" = "latest" ]; then
           URL="https://github.com/iokuru/brio/releases/latest/download/${BIN_NAME}"
@@ -57,17 +61,23 @@ runs:
 
     - name: Run Brio check
       shell: bash
+      env:
+        RUNNER_OS: ${{ runner.os }}
+        INPUT_SPEC: ${{ inputs.spec }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_TRACE: ${{ inputs.trace }}
+        INPUT_TRACES: ${{ inputs.traces }}
       run: |
         EXT=""
-        if [ "${{ runner.os }}" = "Windows" ]; then
+        if [ "$RUNNER_OS" = "Windows" ]; then
           EXT=".exe"
         fi
 
-        CMD=("./brio${EXT}" check --spec "${{ inputs.spec }}" --format "${{ inputs.format }}")
-        if [ -n "${{ inputs.trace }}" ]; then
-          CMD+=(--trace "${{ inputs.trace }}")
-        elif [ -n "${{ inputs.traces }}" ]; then
-          CMD+=(--traces "${{ inputs.traces }}")
+        CMD=("./brio${EXT}" check --spec "$INPUT_SPEC" --format "$INPUT_FORMAT")
+        if [ -n "$INPUT_TRACE" ]; then
+          CMD+=(--trace "$INPUT_TRACE")
+        elif [ -n "$INPUT_TRACES" ]; then
+          CMD+=(--traces "$INPUT_TRACES")
         else
           echo "Error: either trace or traces input must be specified"
           exit 2
